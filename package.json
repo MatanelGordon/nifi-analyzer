@@ -1,0 +1,34 @@
+{
+  "name": "nifi-provenance-analyzer",
+  "version": "1.0.0",
+  "description": "Apache NiFi processor information extractor and analyzer",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "nifi",
+    "provenance",
+    "analyzer",
+    "typescript"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.11.0",
+    "better-sqlite3": "^9.6.0",
+    "dayjs": "^1.11.18",
+    "prompts": "^2.4.2",
+    "sqlite3": "^5.1.6",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^20.0.0",
+    "@types/prompts": "^2.4.9"
+  }
+}
