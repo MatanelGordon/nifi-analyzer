@@ -4,6 +4,7 @@ import { getProcessorsInGroup } from './get-processors';
 import { createNiFiClient, NiFiBaseClient } from './nifi-base';
 import { getConfig } from './config';
 import { selectProcessGroup } from './user-prompts';
+import { getStatusHistory } from './get-status-history';
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
@@ -17,10 +18,7 @@ async function analyzeProcessGroups(
 	let totalProcessors = 0;
 	let processedGroups = 0;
 
-  const processGroups = getProcessGroups(
-			client,
-			processGroupId
-		);
+	const processGroups = getProcessGroups(client, processGroupId);
 
 	try {
 		// Process all process groups using the lazy async generator
@@ -30,20 +28,27 @@ async function analyzeProcessGroups(
 			);
 
 			try {
+				processedGroups++;
+
 				const processors = await getProcessorsInGroup(
 					client,
 					processGroup.component.id
 				);
 
-				if (processors.length > 0) {
-					await database.insertProcessorsInfo(processors);
-					totalProcessors += processors.length;
-					console.log(
-						`✅ Processed ${processors.length} processors from ${processGroup.component.name}`
-					);
-				}
+				if (processors.length === 0) continue;
 
-				processedGroups++;
+				await database.insertProcessorsInfo(processors);
+				totalProcessors += processors.length;
+				console.log(
+					`✅ Processed ${processors.length} processors from ${processGroup.component.name}`
+				);
+				
+				const promises = processors.map(async (processor) => {
+					const statusHistory = await getStatusHistory(client, processor.id);
+					database.insertStatusHistory(processor.id, statusHistory);
+				});
+
+				await Promise.all(promises);
 			} catch (error) {
 				console.error(
 					`❌ Error processing group ${processGroup.component.name}:`,

@@ -21,9 +21,7 @@ data/
 
 # NiFi configuration
 .nifi/**/*.*
-!.nifi/v1/conf/nifi.properties
 !.nifi/v1/conf/bootstrap.conf
-!.nifi/v2/conf/nifi.properties
 !.nifi/v2/conf/bootstrap.conf
 !.nifi/**/conf/flow.*
 

@@ -2,6 +2,15 @@
 
 A TypeScript application that extracts processor information from Apache NiFi process groups and stores it in a SQLite database for analysis.
 
+## Todos
+
+- [ ] Extract status history into tables
+
+- [ ] Extract FlowFile Provanance into tables.
+
+- [ ] Extract properties into tables.
+
+
 ## Features
 
 - 🔍 Recursively extracts processor information from all nested process groups
