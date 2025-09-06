@@ -4,7 +4,7 @@ A TypeScript application that extracts processor information from Apache NiFi pr
 
 ## Todos
 
-- [ ] Extract status history into tables
+- [x] Extract status history into tables
 
 - [ ] Extract FlowFile Provanance into tables.
 

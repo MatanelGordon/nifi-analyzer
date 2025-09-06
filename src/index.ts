@@ -38,6 +38,7 @@ async function analyzeProcessGroups(
 				if (processors.length === 0) continue;
 
 				await database.insertProcessorsInfo(processors);
+				await database.insertProcessorsProperties(processors);
 				totalProcessors += processors.length;
 				console.log(
 					`✅ Processed ${processors.length} processors from ${processGroup.component.name}`

@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3';
+import md5 from 'md5';
 import { ProcessorInfo } from './get-processors.js';
 import { StatusHistory } from './get-status-history.js';
 
@@ -27,6 +28,15 @@ export class ProcessorDatabase {
           comments VARCHAR
         )
       `;
+
+			const processorsPropertiesTable = `
+		CREATE TABLE IF NOT EXISTS processors_properties (
+    		id VARCHAR NOT NULL PRIMARY KEY,
+    		processor_id VARCHAR NOT NULL,
+    		name VARCHAR NOT NULL,
+			value VARCHAR,
+    		FOREIGN KEY (processor_id) REFERENCES processors_info(id)
+		)`;
 
 			const nifiNodesTable = `
         CREATE TABLE IF NOT EXISTS nodes_info (
@@ -63,6 +73,10 @@ export class ProcessorDatabase {
 
 			this.db.prepare(processorsInfoTable).run();
 			console.log('✅ Database table "processors_info" initialized');
+			this.db.prepare(processorsPropertiesTable).run();
+			console.log(
+				'✅ Database table "processors_properties" initialized'
+			);
 			this.db.prepare(nifiNodesTable).run();
 			console.log('✅ Database table "nodes_info" initialized');
 			this.db.prepare(processorsStatusHistoryTable).run();
@@ -98,6 +112,42 @@ export class ProcessorDatabase {
 					p.execution,
 					p.comments
 				);
+			}
+		});
+
+		try {
+			insertMany(processors);
+			console.log(
+				`✅ Successfully inserted ${processors.length} processors into database`
+			);
+		} catch (error) {
+			console.error('❌ Error inserting processors:', error);
+			throw error;
+		}
+	}
+
+	public async insertProcessorsProperties(
+		processors: ProcessorInfo[]
+	): Promise<void> {
+		if (processors.length === 0) {
+			console.log('⚠️  No processors to insert');
+			return;
+		}
+
+		const db = this.ensureConnection();
+		const insert = db.prepare(
+			`INSERT OR REPLACE INTO processors_properties (id, processor_id, name, value) VALUES (?, ?, ?, ?)`
+		);
+		const insertMany = db.transaction((rows: ProcessorInfo[]) => {
+			for (const p of rows) {
+				for (const [pkey, pvalue] of Object.entries(p.properties)) {
+					insert.run(
+						md5(`${p.id}:${pkey}`),
+						p.id,
+						pkey,
+						pvalue
+					);
+				}
 			}
 		});
 
