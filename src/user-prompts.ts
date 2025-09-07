@@ -25,7 +25,7 @@ export async function selectProcessGroup(client: NiFiBaseClient): Promise<string
       name: 'processGroupId',
       message: 'Select a process group to analyze:',
       choices: [
-        { title: 'Root (All Process Groups)', value: 'root', description: 'Analyze all process groups' },
+        { title: 'All Process Groups (root)', value: 'root', description: 'Analyze all process groups' },
         ...choices
       ],
       initial: 0,

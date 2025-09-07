@@ -326,19 +326,19 @@ export class ProcessorDatabase {
 			for (const connection of connectionInfos) {
 				insertTarget.run(
 					connection.source.id,
-					connection.source.name || 'UNKNOWN',
+					connection.source.name,
 					connection.source.type
 				);
 
 				insertTarget.run(
 					connection.destination.id,
-					connection.destination.name || 'UNKNOWN',
+					connection.destination.name,
 					connection.destination.type
 				);
 
 				insert.run(
 					connection.id,
-					connection.name || 'UNKNOWN',
+					connection.name || 'NO_NAME',
 					connection.source.id,
 					connection.destination.id,
 					connection.loadBalanced ? 1 : 0,
