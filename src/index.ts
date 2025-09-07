@@ -5,6 +5,7 @@ import { createNiFiClient, NiFiBaseClient } from './nifi-base';
 import { getConfig } from './config';
 import { selectProcessGroup } from './user-prompts';
 import { getStatusHistory } from './get-status-history';
+import { listConnectionsForGroup } from './get-connections';
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
@@ -39,17 +40,28 @@ async function analyzeProcessGroups(
 
 				await database.insertProcessorsInfo(processors);
 				await database.insertProcessorsProperties(processors);
+
 				totalProcessors += processors.length;
 				console.log(
 					`✅ Processed ${processors.length} processors from ${processGroup.component.name}`
 				);
-				
-				const promises = processors.map(async (processor) => {
-					const statusHistory = await getStatusHistory(client, processor.id);
+
+				const promises = processors.map(async processor => {
+					const statusHistory = await getStatusHistory(
+						client,
+						processor.id
+					);
 					database.insertStatusHistory(processor.id, statusHistory);
 				});
 
 				await Promise.all(promises);
+
+				const connections = await listConnectionsForGroup(
+					client,
+					processGroup.component.id
+				);
+
+				database.insertConnectionInfo(connections);
 			} catch (error) {
 				console.error(
 					`❌ Error processing group ${processGroup.component.name}:`,
