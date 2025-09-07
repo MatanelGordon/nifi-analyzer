@@ -87,6 +87,29 @@ Stores information about connections between processors and other components.
 | back_pressure_data_size_threshold | VARCHAR | Maximum data size for back pressure |
 | flow_file_expiration | VARCHAR | Duration after which flowfiles expire |
 
+## Important Analysis Notes
+
+### Performance Bottleneck Analysis
+When analyzing NiFi flow performance, consider these key points:
+
+1. HTTP-Based Processors:
+   - Processors of type 'InvokeHTTP' are common bottleneck sources
+   - Their performance depends on external server response times
+   - Always include these in performance analysis queries
+   - Consider them high-risk for flow delays
+
+2. Aggregated Metrics:
+   - The `processors_status_history` table contains both per-node and aggregated metrics
+   - Aggregated metrics are linked to a special node with `node_id = 'TOTAL'` in `nodes_info` table
+   - Use this for overall flow performance analysis
+   - Example: `WHERE node_id = 'TOTAL'` to get system-wide metrics
+
+3. Load Balancer Impact:
+   - Connections with load balancers (`is_load_balanced = TRUE`) require special attention
+   - They can become bottlenecks due to distribution overhead
+   - Monitor these connections more closely for performance issues
+   - Consider analyzing their metrics alongside processor performance
+
 ## Example Queries
 
 ### Get High-Duration Processors
