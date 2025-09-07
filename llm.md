@@ -2,6 +2,55 @@
 
 This document describes the database schema for analyzing Apache NiFi processors, connections, and their properties. Apache NiFi is a dataflow system that enables data routing, transformation, and system mediation logic.
 
+## Core NiFi Concepts
+
+### Processors
+A processor is the fundamental building block in NiFi that is responsible for:
+- Creating, sending, receiving, transforming, routing, splitting, merging, and processing FlowFiles
+- Each processor is designed to perform a specific task
+- Examples: GetFile, PutFile, ConvertRecord, ExecuteSQL, InvokeHTTP
+
+#### Advanced Processor Configuration
+- Run Duration: The amount of time a processor will run for each scheduled execution
+  - Longer durations can increase throughput but may impact latency
+  - Short durations provide better responsiveness but have more scheduling overhead
+- Concurrent Tasks: Number of tasks that can execute simultaneously for this processor
+  - Higher concurrency can improve throughput for I/O bound tasks
+  - Too many concurrent tasks can overwhelm downstream processors
+- Penalty Duration: Time period during which a FlowFile is penalized after failed processing
+  - Penalized FlowFiles return to the queue but won't be processed until penalty expires
+  - Helps prevent repeated rapid failure of the same FlowFile
+- Yield Duration: Time a processor will wait before trying again after encountering an issue
+  - Used when the processor itself needs to back off (e.g., remote service unavailable)
+  - Different from penalty duration which applies to individual FlowFiles
+
+### Connections
+A connection represents a link between components (usually processors) in the flow:
+- Acts as a queue for FlowFiles waiting to be processed
+- Enables back pressure to prevent overwhelming downstream processors
+- Can be configured for load balancing in a cluster
+- Maintains order of FlowFiles unless otherwise configured
+
+#### Advanced Connection Configuration
+- Back Pressure:
+  - Object Count Threshold: Maximum number of FlowFiles in the queue
+  - Object Size Threshold: Maximum total size of FlowFiles in the queue
+  - When thresholds are exceeded, upstream processors stop scheduling
+- Load Balancing:
+  - Distributes FlowFiles across multiple nodes in a cluster
+  - Can be based on round robin, single node, or attributes
+- FlowFile Expiration:
+  - Time after which FlowFiles in the queue are considered expired
+  - Helps prevent stale data from being processed
+
+### Process Groups
+A Process Group is a container for organizing and managing dataflows:
+- Groups related processors and connections into logical units
+- Enables hierarchical dataflow management
+- Can have input and output ports for communication with other process groups
+- Allows for reuse of common flow patterns
+- Helps manage complex flows by providing encapsulation
+
 ## Tables Overview
 
 ### processors_info
@@ -18,6 +67,7 @@ Stores the main information about NiFi processors. Each processor represents a d
 | run_schedule | VARCHAR NOT NULL | Schedule period or CRON expression |
 | execution | VARCHAR NOT NULL | Execution mode (RUNNING, STOPPED, etc.) |
 | comments | VARCHAR | Optional user comments about the processor |
+
 
 ### processors_properties
 Stores the configuration properties of each processor. Each processor can have multiple properties.
@@ -46,19 +96,19 @@ Records historical performance metrics for processors across nodes.
 | processor_id | VARCHAR | Reference to the processor (FK to processors_info.id) |
 | node_id | VARCHAR | Reference to the node (FK to nodes_info.id) |
 | timestamp | INTEGER NOT NULL | Timestamp of the metrics record |
-| averageLineageDuration | REAL NOT NULL | Average duration of data lineage in milliseconds |
-| bytesWritten | INTEGER NOT NULL | Number of bytes written |
-| outputCount | INTEGER NOT NULL | Count of output flowfiles |
-| bytesTransferred | INTEGER NOT NULL | Number of bytes transferred |
-| flowFilesRemoved | INTEGER NOT NULL | Count of removed flowfiles |
-| bytesRead | INTEGER NOT NULL | Number of bytes read |
-| taskNanos | INTEGER NOT NULL | Task duration in nanoseconds |
-| averageTaskNanos | REAL NOT NULL | Average task duration in nanoseconds |
-| outputBytes | INTEGER NOT NULL | Number of output bytes |
-| taskCount | INTEGER NOT NULL | Number of tasks executed |
-| inputBytes | INTEGER NOT NULL | Number of input bytes |
-| taskMillis | INTEGER NOT NULL | Task duration in milliseconds |
-| inputCount | INTEGER NOT NULL | Count of input flowfiles |
+| average_lineage_duration | REAL NOT NULL | Average duration of data lineage in milliseconds |
+| bytes_written | INTEGER NOT NULL | Number of bytes written |
+| output_count | INTEGER NOT NULL | Count of output flowfiles |
+| bytes_transferred | INTEGER NOT NULL | Number of bytes transferred |
+| flow_files_removed | INTEGER NOT NULL | Count of removed flowfiles |
+| bytes_read | INTEGER NOT NULL | Number of bytes read |
+| task_nanos | INTEGER NOT NULL | Task duration in nanoseconds |
+| average_task_nanos | REAL NOT NULL | Average task duration in nanoseconds |
+| output_bytes | INTEGER NOT NULL | Number of output bytes |
+| task_count | INTEGER NOT NULL | Number of tasks executed |
+| input_bytes | INTEGER NOT NULL | Number of input bytes |
+| task_millis | INTEGER NOT NULL | Task duration in milliseconds |
+| input_count | INTEGER NOT NULL | Count of input flowfiles |
 
 ### connections_targets
 Stores information about connection endpoints (sources and destinations).
@@ -90,25 +140,66 @@ Stores information about connections between processors and other components.
 ## Important Analysis Notes
 
 ### Performance Bottleneck Analysis
+
 When analyzing NiFi flow performance, consider these key points:
 
 1. HTTP-Based Processors:
-   - Processors of type 'InvokeHTTP' are common bottleneck sources
-   - Their performance depends on external server response times
-   - Always include these in performance analysis queries
-   - Consider them high-risk for flow delays
+    - Processors of type 'InvokeHTTP' are common bottleneck sources.
+    - Their performance depends on external server response times.
+    - Always include these in performance analysis queries.
+    - Consider them high-risk for flow delays.
 
 2. Aggregated Metrics:
-   - The `processors_status_history` table contains both per-node and aggregated metrics
-   - Aggregated metrics are linked to a special node with `node_id = 'TOTAL'` in `nodes_info` table
-   - Use this for overall flow performance analysis
-   - Example: `WHERE node_id = 'TOTAL'` to get system-wide metrics
+    - The `processors_status_history` table contains both per-node and aggregated metrics.
+    - Aggregated metrics are linked to a special node with `node_id = 'TOTAL'` in `nodes_info` table.
+    - Use this for overall flow performance analysis.
+    - Example: `WHERE node_id = 'TOTAL'` to get system-wide metrics.
 
 3. Load Balancer Impact:
-   - Connections with load balancers (`is_load_balanced = TRUE`) require special attention
-   - They can become bottlenecks due to distribution overhead
-   - Monitor these connections more closely for performance issues
-   - Consider analyzing their metrics alongside processor performance
+    - Connections with load balancers (`is_load_balanced = TRUE`) require special attention.
+    - They can become bottlenecks due to distribution overhead.
+    - Monitor these connections more closely for performance issues.
+    - Consider analyzing their metrics alongside processor performance.
+
+4. Find processors that took the longest to execute:
+    - Use this to identify processors that inherently function slower than others.
+    - Good candidates for increasing concurrent tasks to improve throughput.
+    - Shows the maximum observed task duration per processor.
+    - Example prompt:
+```sql
+SELECT MAX(psh.task_millis) / 1000 AS duration, psh.processor_id AS processor_id, pi.name AS name, pi.type AS type
+FROM processors_status_history psh
+JOIN processors_info pi ON psh.processor_id = pi.id
+WHERE psh.task_millis > 0
+GROUP BY psh.processor_id
+ORDER BY MAX(psh.task_millis) DESC;
+```
+
+5. Find processors with high average lineage duration:
+    - Identifies processors that may not handle the volume of flowfiles efficiently.
+    - High average lineage duration suggests a bottleneck in processing throughput.
+    - Consider increasing concurrent tasks and run duration for these processors.
+    - Example prompt:
+```sql
+SELECT psh.processor_id AS processor_id,
+         MAX(psh.average_lineage_duration) as average_lineage,
+         pi.type as type,
+         pi.name as name
+FROM processors_status_history psh
+JOIN processors_info pi ON psh.processor_id = pi.id
+WHERE psh.average_lineage_duration > 0
+GROUP BY processor_id
+ORDER BY average_lineage
+```
+
+6. Find processors with run_duration too high:
+    - Processors with high run_duration may increase throughput but also increase latency.
+    - Useful for identifying where to tune run duration for better performance.
+    - Example prompt:
+```sql
+SELECT * FROM processors_info
+WHERE run_duration >= 1000
+```
 
 ## Example Queries
 

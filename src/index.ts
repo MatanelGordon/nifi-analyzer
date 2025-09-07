@@ -1,11 +1,12 @@
+import chalk from 'chalk';
+import { getConfig } from './config';
 import { ProcessorDatabase } from './database';
+import { listConnectionsForGroup } from './get-connections';
 import { getProcessGroups } from './get-process-groups';
 import { getProcessorsInGroup } from './get-processors';
-import { createNiFiClient, NiFiBaseClient } from './nifi-base';
-import { getConfig } from './config';
-import { selectProcessGroup } from './user-prompts';
 import { getStatusHistory } from './get-status-history';
-import { listConnectionsForGroup } from './get-connections';
+import { createNiFiClient, NiFiBaseClient } from './nifi-base';
+import { selectProcessGroup } from './user-prompts';
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
@@ -46,15 +47,15 @@ async function analyzeProcessGroups(
 					`✅ Processed ${processors.length} processors from ${processGroup.component.name}`
 				);
 
-				const promises = processors.map(async processor => {
+				for (const processor of processors) {
 					const statusHistory = await getStatusHistory(
 						client,
 						processor.id
 					);
-					database.insertStatusHistory(processor.id, statusHistory);
-				});
 
-				await Promise.all(promises);
+					database.insertStatusHistory(processor.id, statusHistory);
+					console.log(chalk.hex('#9e099eff')(`Inserted ${statusHistory.aggregateSnapshots.length + statusHistory.nodeSnapshots.length} metrics for processor: ${processor.name}`));
+				}
 
 				const connections = await listConnectionsForGroup(
 					client,
@@ -169,4 +170,5 @@ try {
 	console.error('❌ Unhandled error:', error);
 	process.exit(1);
 }
+
 
