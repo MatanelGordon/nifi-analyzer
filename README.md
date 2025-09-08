@@ -9,6 +9,7 @@ Tired of not understanding why your Nifi sucks?
 - 🔍 Recursively extracts processor information from all nested process groups
 - 📊 Comprehensive performance metrics collection and analysis
 - 💾 Stores data in SQLite database with structured schema
+- **LLM compatible** - `llm.md` can help Language Models create SQL queries for you.
 
 ## What Can I do with it?
 
@@ -31,44 +32,9 @@ For detailed schema information, see [llm.md](llm.md).
 
 ## Quick Start
 
-### NiFi Setup
+### Usage
 
-Start and stop your preferred NiFi version using the provided scripts:
-
-**For Linux/macOS:**
-```bash
-# Start NiFi v1.28.0 (default)
-./scripts/start-nifi.sh
-
-# Start NiFi v2.2.0
-./scripts/start-nifi.sh v2
-
-# Stop all NiFi instances
-./scripts/stop-nifi.sh
-
-# Stop specific version
-./scripts/stop-nifi.sh v1
-./scripts/stop-nifi.sh v2
-```
-
-**For Windows:**
-```cmd
-# Start NiFi v1.28.0 (default)
-scripts\start-nifi.bat
-
-# Start NiFi v2.2.0
-scripts\start-nifi.bat v2
-
-# Stop all NiFi instances
-scripts\stop-nifi.bat
-
-# Stop specific version
-scripts\stop-nifi.bat v1
-scripts\stop-nifi.bat v2
-```
-
-### Manual Setup
-
+ > If you are looking to run a local nifi instance, please refer to [Local NIfi Setup](#local-nifi-setup-optional)
 1. **Install dependencies:**
    ```bash
    pnpm install
@@ -103,6 +69,42 @@ pnpm start
 ```
 
 This will create a local `output.db` SQLite file that you can analyze directly with any SQLite client.
+
+### Local NiFi Setup (Optional)
+
+Start and stop your preferred NiFi version using the provided scripts:
+
+**For Linux/macOS:**
+```bash
+# Start NiFi v1.28.0 (default)
+./scripts/start-nifi.sh
+
+# Start NiFi v2.2.0
+./scripts/start-nifi.sh v2
+
+# Stop all NiFi instances
+./scripts/stop-nifi.sh
+
+# Stop specific version
+./scripts/stop-nifi.sh v1
+./scripts/stop-nifi.sh v2
+```
+
+**For Windows:**
+```cmd
+# Start NiFi v1.28.0 (default)
+scripts\start-nifi.bat
+
+# Start NiFi v2.2.0
+scripts\start-nifi.bat v2
+
+# Stop all NiFi instances
+scripts\stop-nifi.bat
+
+# Stop specific version
+scripts\stop-nifi.bat v1
+scripts\stop-nifi.bat v2
+```
 
 ## Configuration
 
