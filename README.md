@@ -1,4 +1,4 @@
-# NiFi Provenance Analyzer
+# NiFi Analyzer
 
 Tired of not understanding why your Nifi sucks?
 
