@@ -1,40 +1,28 @@
 # NiFi Provenance Analyzer
 
-A TypeScript application that extracts processor information from Apache NiFi process groups and stores it in a SQLite database for analysis.
-
-## Todos
-
-- [x] Extract status history into tables
-
-- [ ] Extract FlowFile Provanance into tables.
-
-- [ ] Extract properties into tables.
-
+A TypeScript application that extracts processor information and performance metrics from Apache NiFi process groups and stores them in a SQLite database for analysis.
 
 ## Features
 
 - 🔍 Recursively extracts processor information from all nested process groups
+- 📊 Comprehensive performance metrics collection and analysis
 - 💾 Stores data in SQLite database with structured schema
--- 🐳 Docker Compose setup with analyzer
--- 📊 Ready-to-use SQLite integration
 - 🔐 Secure authentication with NiFi API
 - ⚙️ Configurable via environment variables
-- 🚀 Separate NiFi v1 and v2 Docker Compose files
 
 ## Database Schema
 
-The `processors_info` table contains the following columns:
+The application stores information in multiple tables to enable detailed analysis:
 
-- `id` - Processor's unique identifier (Primary Key)
-- `name` - Processor's display name
-- `type` - Processor type (e.g., "RouteOnAttribute", "InvokeHttp")
-- `run_duration` - Scheduling run duration in milliseconds
-- `concurrent_tasks` - Number of concurrent tasks
-- `scheduling_strategy` - Processor's scheduling strategy
-- `run_schedule` - Run schedule value as shown in UI
-- `execution` - Execution node ("ALL_NODES" or "PRIMARY_NODE")
-- `comments` - Processor comments
-- `terminated_relationships` - Comma-separated list of terminated relationships
+### Core Tables
+- `processors_info`: Basic processor configuration and settings
+- `processors_properties`: Processor-specific property configurations
+- `processors_status_history`: Historical performance metrics
+- `connections_info`: Information about connections between processors
+- `connections_targets`: Details about connection endpoints
+- `nodes_info`: Information about NiFi cluster nodes
+
+For detailed schema information, see [llm.md](llm.md).
 
 ## Quick Start
 
@@ -74,27 +62,6 @@ scripts\stop-nifi.bat v1
 scripts\stop-nifi.bat v2
 ```
 
-### Using Docker Compose (Recommended)
-
-1. **Start NiFi first:**
-   ```bash
-   ./scripts/start-nifi.sh  # or scripts\start-nifi.bat on Windows
-   ```
-
-2. **Wait for NiFi to be ready (2-3 minutes)**, then start the analyzer:
-   ```bash
-   docker compose up -d
-   ```
-
-3. **Access the applications:**
-   - NiFi: https://localhost:8080 (admin/12345678Matanel!)
-
-4. **The analyzer will automatically:**
-   - Connect to NiFi
-   - Extract processor information from all process groups
-   - Store data in `/data/output.db` (SQLite format)
-      - Make it available for analysis tools (e.g., SQLite viewers)
-
 ### Manual Setup
 
 1. **Install dependencies:**
@@ -132,153 +99,98 @@ pnpm start
 
 This will create a local `output.db` SQLite file that you can analyze directly with any SQLite client.
 
-## NiFi Persistence
-
-Both NiFi versions use persistent volumes to maintain your configurations and data:
-
-- **Configuration**: `./.nifi/conf/`
-- **Databases**: `./.nifi/database_repository/`
-- **FlowFiles**: `./.nifi/flowfile_repository/`
-- **Content**: `./.nifi/content_repository/`
-- **Provenance**: `./.nifi/provenance_repository/`
-- **State**: `./.nifi/state/`
-- **Logs**: `./.nifi/logs/`
-
-Your NiFi flows, processors, and configurations will persist between container restarts.
-
-### NiFi Management Scripts
-
-The project includes convenient scripts for managing NiFi instances:
-
-**Start Scripts:**
-- `./scripts/start-nifi.sh [v1|v2]` - Start specific NiFi version (default: v1)
-- `scripts\start-nifi.bat [v1|v2]` - Windows version
-
-**Stop Scripts:**
-- `./scripts/stop-nifi.sh [v1|v2|all]` - Stop specific version or all instances (default: all)
-- `scripts\stop-nifi.bat [v1|v2|all]` - Windows version
-
-**Examples:**
-```bash
-# Start NiFi v1, then stop it
-./scripts/start-nifi.sh v1
-./scripts/stop-nifi.sh v1
-
-# Start NiFi v2, then stop all instances
-./scripts/start-nifi.sh v2
-./scripts/stop-nifi.sh all
-
-# Check what's running and stop everything
-docker compose ps
-./scripts/stop-nifi.sh all
-```
-
 ## Configuration
 
 ### Environment Variables
 
-- `NIFI_URL` - NiFi instance URL (default: https://localhost:8080)
-- `NIFI_USERNAME` - NiFi username (default: admin)
-- `NIFI_PASSWORD` - NiFi password (default: 12345678Matanel!)
+- `NIFI_URL` - NiFi instance URL (default: `https://localhost:8080`)
+- `NIFI_USERNAME` - NiFi username
+- `NIFI_PASSWORD` - NiFi password
 - `PG_ID` - Process Group ID to analyze (default: prompts for selection)
-- `DB_PATH` - SQLite database path (default: /data/output.db)
-
-### External NiFi Access
-
-The analyzer and Superset containers are configured to access external NiFi instances:
-
-- **Network Access**: Both services can connect to external hosts
-- **External Connections**: Can connect to NiFi instances on EC2, cloud services, etc.
-- **HTTPS Support**: Default configuration uses HTTPS with certificate bypass
-- **Environment Variables**: All NiFi connection parameters can be overridden
-
-To connect to an external NiFi instance:
-
-```bash
-# Connect to NiFi on EC2
-export NIFI_URL="https://your-nifi-ec2.com:8080"
-export NIFI_USERNAME="your-username"
-export NIFI_PASSWORD="your-password"
-docker compose up -d
-```
+- `DB_PATH` - SQLite database path (default: `/data/output.db`)
 
 ### Process Group Selection
 
 If `PG_ID` is not provided, the application will:
+
 1. Fetch all root-level process groups
 2. Present an interactive menu for selection
 3. Allow choosing "Root" to analyze all process groups
 
 ## Architecture
 
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Apache NiFi   │───▶│  TypeScript      │───▶│   SQLite        │
-│   (v1/v2)       │    │  Analyzer        │    │  (output.db)    │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                                │
-                                ▼
-                       ┌──────────────────┐
-                       │  Analysis Tools  │
-                       │  (SQLite)        │
-                       └──────────────────┘
+```mermaid
+graph LR
+    A[Apache NiFi] --> B[TypeScript Analyzer]
+    B --> C[SQLite Database]
+    C --> D[Analysis Tools]
 ```
 
-## File Structure
+## Analysis Examples
 
-```
-src/
-├── index.ts              # Main application entry point
-├── nifi-base.ts          # NiFi API client with authentication
-├── get-process-groups.ts # Recursive process group fetcher
-├── get-processors.ts     # Processor information extractor
-├── database.ts           # SQLite database operations (better-sqlite3)
-├── config.ts             # Configuration management
-└── user-prompts.ts       # User interaction utilities
+### Performance Analysis
 
-Docker Files:
-├── docker-compose.yml           # Main analyzer + Superset
-├── nifi.v1.docker-compose.yml  # NiFi v1.28.0
-├── nifi.v2.docker-compose.yml  # NiFi v2.2.0
-├── Dockerfile                   # Analyzer container
-├── (no Superset files)          # Superset removed from this project
-
-Scripts:
-├── scripts/
-│   ├── start-nifi.sh           # NiFi startup script (Linux/macOS)
-│   ├── start-nifi.bat          # NiFi startup script (Windows)
-│   ├── stop-nifi.sh            # NiFi stop script (Linux/macOS)
-│   └── stop-nifi.bat           # NiFi stop script (Windows)
-```
-
-## Usage Examples
-
-### Querying the Database
-
-You can query the SQLite database directly:
+Find processors with longest execution times:
 
 ```sql
--- Get all processors
-SELECT * FROM processors_info;
+SELECT MAX(psh.task_millis) / 1000 AS duration, 
+       pi.name AS name, 
+       pi.type AS type
+FROM processors_status_history psh
+JOIN processors_info pi ON psh.processor_id = pi.id
+WHERE psh.task_millis > 0
+GROUP BY psh.processor_id
+ORDER BY MAX(psh.task_millis) DESC;
+```
 
--- Get processors by type
-SELECT * FROM processors_info WHERE type = 'RouteOnAttribute';
+Identify potential bottlenecks by lineage duration:
 
--- Get execution distribution
-SELECT execution, COUNT(*) as count 
-FROM processors_info 
-GROUP BY execution;
+```sql
+SELECT psh.processor_id,
+       MAX(psh.average_lineage_duration) as average_lineage,
+       pi.type,
+       pi.name
+FROM processors_status_history psh
+JOIN processors_info pi ON psh.processor_id = pi.id
+WHERE psh.average_lineage_duration > 0
+GROUP BY processor_id
+ORDER BY average_lineage;
+```
 
--- Get processor types with counts
+Find load-balanced connections:
+
+```sql
+SELECT 
+    c.name AS connection_name,
+    src.name AS source_name,
+    dst.name AS destination_name,
+    c.load_balance_strategy,
+    c.load_balance_partition_attribute
+FROM connections_info c
+JOIN connections_targets src ON c.source_id = src.id
+JOIN connections_targets dst ON c.destination_id = dst.id
+WHERE c.is_load_balanced = TRUE;
+```
+
+### Configuration Analysis
+
+Get processors with high run duration:
+
+```sql
+SELECT name, type, run_duration, concurrent_tasks
+FROM processors_info
+WHERE run_duration >= 1000
+ORDER BY run_duration DESC;
+```
+
+Get processor type distribution:
+
+```sql
 SELECT type, COUNT(*) as count 
 FROM processors_info 
 GROUP BY type 
 ORDER BY count DESC;
 ```
-
-### Analysis / Visualization
-
-Use any SQLite-compatible analysis or visualization tool to connect to `./data/output.db` and explore the `processors_info` table.
 
 ## Security Considerations
 
@@ -294,30 +206,47 @@ Use any SQLite-compatible analysis or visualization tool to connect to `./data/o
 
 ### Common Issues
 
-1. **NiFi Connection Issues:**
-   - Verify NiFi is running and accessible
-   - Check credentials (admin/12345678Matanel!)
-   - Wait for NiFi to fully start (2-3 minutes)
-   - Self-signed certificate warnings are bypassed automatically
+**NiFi Connection Issues:**
 
-2. **SQLite Errors:**
-   - Ensure write permissions to data directory
-   - Verify sufficient disk space
-   - Check that any native SQLite libraries are available in your environment (usually preinstalled)
+- Verify NiFi is running and accessible
+- Check credentials
+- Wait for NiFi to fully start (2-3 minutes)
+- Self-signed certificate warnings are bypassed automatically
 
-3. **Visualization Tool Issues:**
-   - Ensure your visualization tool can access the mounted `/data/output.db` file
-   - Verify data directory permissions
+**SQLite Errors:**
 
-4. **Docker Compose Issues:**
-   - Ensure all services are running: `docker compose ps`
-   - Check logs: `docker compose logs [service-name]`
-   - Rebuild if needed: `docker compose build`
+- Ensure write permissions to data directory
+- Verify sufficient disk space
+- Check that native SQLite libraries are available
 
-5. **NiFi Persistence Issues:**
-   - Check that `.nifi/` directories have proper permissions
-   - Ensure Docker has access to bind mount directories
-   - On Windows, ensure drive sharing is enabled
+### Development
+
+**Prerequisites:**
+
+- Node.js 18+
+- pnpm
+- TypeScript
+- SQLite
+
+**Scripts:**
+
+- `pnpm start` - Run the analyzer
+- `pnpm build` - Compile TypeScript
+
+### Security Notes
+
+⚠️ **Important:**
+
+- Default credentials are for development only
+- Change default passwords in production
+- Ensure NiFi instance is properly secured
+- Use environment variables for sensitive configuration
+- Certificate validation is bypassed for development
+
+### License
+
+ISC License
+
 
 ### Development Workflow
 
