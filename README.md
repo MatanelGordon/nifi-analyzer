@@ -1,14 +1,19 @@
 # NiFi Provenance Analyzer
 
-A TypeScript application that extracts processor information and performance metrics from Apache NiFi process groups and stores them in a SQLite database for analysis.
+Tired of not understanding why your Nifi sucks?
+
+**New!** A TypeScript application that extracts processor information and performance metrics from Apache NiFi process groups and stores them in a SQLite database for analysis.
 
 ## Features
 
 - 🔍 Recursively extracts processor information from all nested process groups
 - 📊 Comprehensive performance metrics collection and analysis
 - 💾 Stores data in SQLite database with structured schema
-- 🔐 Secure authentication with NiFi API
-- ⚙️ Configurable via environment variables
+
+## What Can I do with it?
+
+- 🔍 Detect bottlenecks
+- 📊 create your own visualizations (not just "View Status History")
 
 ## Database Schema
 
