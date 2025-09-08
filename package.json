@@ -4,10 +4,10 @@
 	"description": "Apache NiFi processor information extractor and analyzer",
 	"type": "module",
 	"main": "index.js",
+  "packageManager": "pnpm@8.8.0",
 	"scripts": {
 		"start": "tsx src/index.ts",
-		"build": "tsc",
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"build": "tsc"
 	},
 	"keywords": [
 		"nifi",
