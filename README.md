@@ -44,10 +44,13 @@ For detailed schema information, see [llm.md](llm.md).
    ```
 
 2. **Set environment variables:**
+
+   Example Using the provided local nifi instance:
+
    ```bash
    export NIFI_URL="https://localhost:8080"
    export NIFI_USERNAME="admin"
-   export NIFI_PASSWORD="12345678Matanel!"
+   export NIFI_PASSWORD="12345678Admin!"
    export PG_ID="root"  # Optional: specific process group ID
    ```
 
