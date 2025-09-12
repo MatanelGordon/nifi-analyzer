@@ -49,9 +49,20 @@ For detailed schema information, see [llm.md](llm.md).
    ```
 
 3. **Run the analyzer:**
+
+   CLI Mode:
+
    ```bash
    pnpm start
    ```
+
+   Web UI Mode:
+
+   ```bash
+   pnpm start:server
+   ```
+
+   This will start an HTTP server with a web UI and an automated analysis route. While the server provides detailed console logging, please note that it has limited exception handling. Keep an eye on system logs for any unexpected issues.
 
 ### Standalone Analyzer for External NiFi
 
