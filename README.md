@@ -1,5 +1,8 @@
 # NiFi Analyzer
 
+<img width="1436" height="612" alt="image" src="https://github.com/user-attachments/assets/a263814d-79f5-416d-8d93-6ee908226562" />
+
+
 Tired of not understanding why your Nifi sucks?
 
 **New!** A TypeScript application that extracts processor information and performance metrics from Apache NiFi process groups and stores them in a SQLite database for analysis.
