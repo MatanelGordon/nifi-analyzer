@@ -4,14 +4,15 @@ export interface Config {
   nifiPassword: string;
   pgId: string | null;
   dbPath: string;
+  noExit:boolean
 }
 
-export async function getConfig(): Promise<Config> {
-  const nifiUrl = process.env.NIFI_URL || 'https://localhost:8080';
-  const nifiUsername = process.env.NIFI_USERNAME || 'admin';
-  const nifiPassword = process.env.NIFI_PASSWORD || '12345678Matanel!';
-  const pgId = process.env.PG_ID ?? null;
-  const dbPath = process.env.DB_PATH || './data/output.db';
+export async function getConfig(conf: Partial<Config> = {}): Promise<Config> {
+  const nifiUrl = conf.nifiUrl ?? process.env.NIFI_URL ?? 'https://localhost:8080';
+  const nifiUsername = conf.nifiUsername ?? process.env.NIFI_USERNAME ?? 'admin';
+  const nifiPassword = conf.nifiPassword ?? process.env.NIFI_PASSWORD ?? '12345678Admin!';
+  const pgId = conf.pgId ?? process.env.PG_ID ?? null;
+  const dbPath = conf.dbPath ?? process.env.DB_PATH ?? './data/output.db';
 
   console.log('📋 Configuration:');
   console.log(`  NiFi URL: ${nifiUrl}`);
@@ -25,6 +26,7 @@ export async function getConfig(): Promise<Config> {
     nifiUsername,
     nifiPassword,
     pgId,
-    dbPath
+    dbPath,
+    noExit: conf.noExit ?? false,
   };
 }

@@ -1,0 +1,170 @@
+:root {
+	color-scheme: light dark;
+	font-smooth: antialiased;
+	--red: #be2727;
+	--green: #21853c;
+}
+
+@media (prefers-color-scheme: dark) {
+	body {
+		--primary-color: #303030;
+		--text-color: #e0e0e0;
+		--accent-color: #8aa2ad;
+	}
+}
+
+@media (prefers-color-scheme: light) {
+	body {
+		--primary-color: #fafafa;
+		--text-color: #303030;
+		--accent-color: #004849;
+	}
+}
+
+body {
+	background-color: var(--primary-color);
+	color: var(--text-color);
+	font-family: system-ui;
+}
+
+@media screen and (width > 678px) {
+	body {
+		background: var(--primary-color) url('nifi-bg.png') top left no-repeat;
+	}
+
+	.content-wrapper {
+		margin: 6rem;
+	}
+
+	.content-wrapper .title {
+		font-size: 20px;
+		color: var(--accent-color);
+		font-weight: 200;
+	}
+}
+
+@media screen and (width <= 678px) {
+	.content-wrapper {
+		margin: 1rem;
+		text-align: center;
+	}
+}
+
+.content-wrapper {
+	display: grid;
+	grid-template-rows: repeat(auto-fit, minmax(2rem, auto));
+	gap: 1rem;
+	width: 24em;
+}
+
+.field {
+	position: relative;
+	display: flex;
+	font-size: 1.2em;
+}
+
+.field__input {
+	flex-grow: 1;
+	padding: 0.6em 1rem;
+	font-size: inherit;
+	border: 1px solid var(--accent-color);
+	border-radius: 2px;
+}
+
+.field__input:focus {
+	outline: none;
+	border-color: var(--accent-color);
+}
+
+.field__input:user-invalid {
+	border-color: var(--red);
+}
+
+.field__label {
+	position: absolute;
+	left: 1em;
+	top: 50%;
+	transform: translateY(-50%);
+	padding: 0.1em 0.25em;
+	transition: all 70ms ease-out;
+}
+
+.field__input:focus ~ .field__label,
+.field__input:autofill ~ .field__label,
+.field__input:not(:empty) ~ .field__label,
+.field.active > .field__label {
+	top: 0;
+	transform: translate(-10%, -50%) scale(0.8);
+	background: var(--primary-color);
+}
+
+.field__input:user-invalid ~ .field__label {
+	color: var(--red);
+	font-weight: 500;
+}
+
+.content-wrapper .footer {
+	display: flex;
+	justify-content: end;
+	gap: 1rem;
+	flex-flow: nowrap row-reverse;
+}
+
+.nifi-button {
+	background: var(--accent-color);
+	color: var(--primary-color);
+	border: none;
+	border-radius: 2px;
+	padding: 0.5em 1em;
+	font-size: 1.2em;
+	cursor: pointer;
+	transition: background-color 90ms ease-out;
+	height: 3rem;
+	width: 8rem;
+	box-sizing: border-box;
+}
+
+.nifi-button:not(:disabled):is(:hover, :focus) {
+	background: var(--primary-color);
+	color: var(--accent-color);
+	border: 1px solid var(--accent-color);
+}
+
+.nifi-button:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+	filter: grayscale(1);
+}
+
+.nifi-button2 {
+	background: var(--primary-color);
+	color: var(--accent-color);
+	border: 1px solid var(--accent-color);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	cursor: pointer;
+	padding: 0.5em 1em;
+	text-decoration: none;
+}
+
+.nifi-button2:is(:hover, :focus) {
+	text-decoration: underline;
+}
+
+.loader-wrapper {
+	position: relative;
+}
+
+.output {
+	font-size: 1rem;
+	color: var(--accent-color);
+}
+
+.output .error {
+	color: var(--red);
+}
+
+.output .success {
+	color: var(--green);
+}

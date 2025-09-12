@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { getConfig } from './config';
+import { Config, getConfig } from './config';
 import { ProcessorDatabase } from './database';
 import { listConnectionsForGroup } from './get-connections';
 import { getProcessGroups } from './get-process-groups';
@@ -54,7 +54,14 @@ async function analyzeProcessGroups(
 					);
 
 					database.insertStatusHistory(processor.id, statusHistory);
-					console.log(chalk.hex('#9e099eff')(`Inserted ${statusHistory.aggregateSnapshots.length + statusHistory.nodeSnapshots.length} metrics for processor: ${processor.name}`));
+					console.log(
+						chalk.hex('#9e099eff')(
+							`Inserted ${
+								statusHistory.aggregateSnapshots.length +
+								statusHistory.nodeSnapshots.length
+							} metrics for processor: ${processor.name}`
+						)
+					);
 				}
 
 				const connections = await listConnectionsForGroup(
@@ -107,11 +114,11 @@ async function analyzeProcessGroups(
 	}
 }
 
-async function main(): Promise<void> {
+export async function run(_config: Partial<Config> = {}): Promise<void> {
 	console.log('🚀 NiFi Processor Analyzer Starting...\n');
 
 	try {
-		const config = await getConfig();
+		const config = await getConfig(_config);
 
 		// Create NiFi client
 		const client = createNiFiClient({
@@ -148,27 +155,17 @@ async function main(): Promise<void> {
 		);
 	} catch (error) {
 		console.error('❌ Fatal error:', error);
-		process.exit(1);
+		
+		if (!_config.noExit) {
+			process.exit(1);
+		}
 	}
 }
 
-// Handle graceful shutdown
-process.on('SIGINT', () => {
-	console.log('\n👋 Shutting down gracefully...');
-	process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-	console.log('\n👋 Shutting down gracefully...');
-	process.exit(0);
-});
-
-// Run the main function
-try {
-	await main();
-} catch (error) {
-	console.error('❌ Unhandled error:', error);
-	process.exit(1);
+export function uuid() {
+	return 'xxxx-xxxx-xxxx'.replaceAll('x', function () {
+		const r = (Math.random() * 16) | 0;
+		return r.toString(16);
+	});
 }
-
 

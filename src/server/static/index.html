@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="icon" href="favicon.ico" type="image/x-icon" />
+		<link rel="stylesheet" href="index.css" />
+		<script src="index.js" defer></script>
+		<title>Nifi Analyzer</title>
+	</head>
+	<body>
+		<form class="content-wrapper" id="analyze-form">
+			<h1 class="title">Nifi Provenance Analyzer</h1>
+			<div class="field">
+				<input
+					class="field__input"
+					type="url"
+					id="URL__input"
+					name="url"
+					required
+					autocomplete="url"
+				/>
+				<label class="field__label" for="URL__input">URL</label>
+			</div>
+			<div class="field">
+				<input
+					class="field__input"
+					type="text"
+					id="USER__input"
+					name="username"
+					required
+					autocomplete="username"
+				/>
+				<label class="field__label" for="USER__input">Username</label>
+			</div>
+			<div class="field">
+				<input
+					class="field__input"
+					type="password"
+					id="PSW__input"
+					name="password"
+					required
+					autocomplete="current-password"
+				/>
+				<label class="field__label" for="PSW__input">Password</label>
+			</div>
+			<div class="field">
+				<input
+					class="field__input"
+					type="text"
+					id="PGID__input"
+					name="pgid"
+					autocomplete="off"
+				/>
+				<label class="field__label" for="PGID__input">Process Group ID [default: root]</label>
+			</div>
+            <div class="footer">
+                <button class="nifi-button" id="analyze">Analyze</button>
+				<a class="nifi-button2" id="get-file" download style="display: none;">Get File</a>
+            </div>
+            <p class="output" id="output"></p>
+		</form>
+	</body>
+</html>

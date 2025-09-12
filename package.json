@@ -4,12 +4,14 @@
 	"description": "Apache NiFi processor information extractor and analyzer",
 	"type": "module",
 	"main": "index.js",
-  "files": [
-    "dist/"
-  ],
-  "packageManager": "pnpm@8.8.0",
+	"files": [
+		"dist/"
+	],
+	"packageManager": "pnpm@8.8.0",
 	"scripts": {
-		"start": "tsx src/index.ts",
+		"start": "tsx src/script/index.ts",
+		"start:server": "tsx src/server/index.ts",
+		"dev:server": "tsx src/server/index.ts --watch",
 		"build": "tsc"
 	},
 	"keywords": [
@@ -26,19 +28,26 @@
 		"better-sqlite3": "^9.6.0",
 		"chalk": "^5.6.0",
 		"dayjs": "^1.11.18",
+		"express": "^5.1.0",
+		"helmet": "^8.1.0",
 		"lodash": "^4.17.21",
 		"md5": "^2.3.0",
+		"morgan": "^1.10.1",
 		"prompts": "^2.4.2",
 		"sqlite3": "^5.1.6",
 		"tsx": "^4.20.5",
-		"typescript": "^5.9.2"
+		"yargs": "17.7.2"
 	},
 	"devDependencies": {
 		"@types/better-sqlite3": "^7.6.13",
+		"@types/express": "^5.0.3",
 		"@types/lodash": "^4.17.20",
 		"@types/md5": "^2.3.5",
+		"@types/morgan": "^1.9.10",
 		"@types/node": "^20.0.0",
-		"@types/prompts": "^2.4.9"
+		"@types/prompts": "^2.4.9",
+		"@types/yargs": "^17.0.33",
+		"typescript": "^5.9.2"
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [

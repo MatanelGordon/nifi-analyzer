@@ -48,7 +48,7 @@ export class NiFiBaseClient {
     await this.authenticate();
   }
 
-  private async authenticate(): Promise<void> {
+  private async authenticate(): Promise<boolean> {
     try {
       const response: AxiosResponse<string> = await axios.post(
         `${this.config.baseUrl}/nifi-api/access/token`,
@@ -67,6 +67,7 @@ export class NiFiBaseClient {
       this.tokenExpiry = dayjs().add(1, 'hour').toDate().getTime(); // Assuming token valid for 1 hour
       
       console.log('✅ Successfully authenticated with NiFi');
+      return true;
     } catch (error) {
       console.error('❌ Authentication failed:', error);
       throw new Error(`Failed to authenticate with NiFi: ${error}`);

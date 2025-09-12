@@ -7,10 +7,8 @@ services:
       - "8080:8080"
       - "6000:6000"
       - "6001:6001"
-    environment:
-      - NIFI_WEB_HTTPS_PORT=8080
-      - SINGLE_USER_CREDENTIALS_USERNAME=admin
-      - SINGLE_USER_CREDENTIALS_PASSWORD=12345678Admin!
+    env_file:
+      - .local-nifi.env
     networks:
       - default
 
@@ -22,10 +20,8 @@ services:
       - "8080:8080"
       - "6000:6000"
       - "6001:6001"
-    environment:
-      - NIFI_WEB_HTTPS_PORT=8080
-      - SINGLE_USER_CREDENTIALS_USERNAME=admin
-      - SINGLE_USER_CREDENTIALS_PASSWORD=12345678Admin!
+    env_file:
+      - .local-nifi.env
     restart: unless-stopped
     networks:
       - default
