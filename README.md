@@ -1,6 +1,6 @@
 # NiFi Analyzer
 
-<img width="1436" height="612" alt="image" src="https://github.com/user-attachments/assets/a263814d-79f5-416d-8d93-6ee908226562" />
+<img width="2500" height="1386" alt="image" src="https://github.com/user-attachments/assets/12f5881b-cade-4e7a-8e38-a3c077a4aec4" />
 
 
 Tired of not understanding why your Nifi sucks?
