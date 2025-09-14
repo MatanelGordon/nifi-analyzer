@@ -18,7 +18,7 @@ app.use('/data',
 
 app.get('/', (req, res) => res.sendFile(path.resolve('./server/static/index.html')));
 app.post('/analyze', async (req, res) => {
-    const { username, password, nifiUrl, pgId } = req.body;
+    const { username, password, nifiUrl, pgId, provenanceLimit } = req.body;
     const filePath = `data/${uuid()}.db`;
 
     try{
@@ -28,7 +28,11 @@ app.post('/analyze', async (req, res) => {
             nifiUrl,
             dbPath: filePath,
             pgId: pgId || 'root',
-            noExit:true
+            noExit: true,
+            provenance: {
+                enabled: provenanceLimit > 0,
+                maxResults: provenanceLimit || 100000
+            }
         });
         await new Promise(resolve => setTimeout(resolve, 5000)); // Simulate async work
 

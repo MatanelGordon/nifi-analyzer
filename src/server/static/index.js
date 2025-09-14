@@ -8,12 +8,12 @@ document
 	.addEventListener('submit', onSubmitForm);
 
 
-async function runScript(nifiUrl, username, password, pgId) {
+async function runScript(nifiUrl, username, password, pgId, provenanceLimit) {
     try{
         startButtonLoader();
         const res = await fetch('/analyze', {
 			method: 'POST',
-			body: JSON.stringify({ nifiUrl, username, password, pgId }),
+			body: JSON.stringify({ nifiUrl, username, password, pgId, provenanceLimit }),
 			headers: { 'Content-Type': 'application/json' },
 		});
         const json = await res.json();
@@ -41,12 +41,13 @@ async function onSubmitForm(event) {
     const password = formData.get('password');
     const nifiUrl = formData.get('url');
     let pgid = formData.get('pgid');
+    const provenanceLimit = parseInt(formData.get('provenanceLimit')) || 100000;
 
     if(pgid.trim() === ''){
         pgid = null;
     }
 
-    await runScript(nifiUrl, username, password, pgid);
+    await runScript(nifiUrl, username, password, pgid, provenanceLimit);
 }
 
 function outputError(message){

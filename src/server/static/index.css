@@ -92,6 +92,7 @@ body {
 .field__input:focus ~ .field__label,
 .field__input:autofill ~ .field__label,
 .field__input:not(:empty) ~ .field__label,
+.field__input[value] + .field__label,
 .field.active > .field__label {
 	top: 0;
 	transform: translate(-10%, -50%) scale(0.8);
@@ -103,11 +104,23 @@ body {
 	font-weight: 500;
 }
 
+.field__hint {
+	position: absolute;
+	left: 1em;
+	top: 100%;
+	margin-top: 0.25em;
+	font-size: 0.8em;
+	color: var(--accent-color);
+	opacity: 0.7;
+	pointer-events: none;
+}
+
 .content-wrapper .footer {
 	display: flex;
 	justify-content: end;
 	gap: 1rem;
 	flex-flow: nowrap row-reverse;
+	margin-top: 1rem;
 }
 
 .nifi-button {
