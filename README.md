@@ -152,6 +152,35 @@ graph LR
 
 ## Analysis Examples
 
+### Quick Start: Find the Slowest Processor
+
+**LLM Prompt Example:**
+```
+"Find the slowest processors in my NiFi flow. Show me the top 10 processors with the longest execution times, including their names and types."
+```
+
+**Generated SQL Query:**
+```sql
+SELECT 
+    pi.name AS processor_name,
+    pi.type AS processor_type,
+    MAX(psh.task_millis) / 1000 AS max_duration_seconds
+FROM processors_status_history psh
+JOIN processors_info pi ON psh.processor_id = pi.id
+WHERE psh.task_millis > 0
+GROUP BY psh.processor_id
+ORDER BY max_duration_seconds DESC
+LIMIT 10;
+```
+
+This query will show you the top 10 processors with the longest execution times, helping you quickly identify performance bottlenecks.
+
+**More LLM Prompt Examples:**
+- `"Show me processors that are taking longer than 5 seconds to execute"`
+- `"Find processors with high average lineage duration"`
+- `"Which processor types are most common in my flow?"`
+- `"Show me all InvokeHTTP processors and their performance metrics"`
+
 ### Performance Analysis
 
 Find processors with longest execution times:

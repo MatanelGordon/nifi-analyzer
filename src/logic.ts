@@ -7,13 +7,15 @@ import { getProcessorsInGroup } from './get-processors';
 import { getStatusHistory } from './get-status-history';
 import { createNiFiClient, NiFiBaseClient } from './nifi-base';
 import { selectProcessGroup } from './user-prompts';
+import { streamAllProvenanceEventsForProcessor } from './provenance-events';
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 async function analyzeProcessGroups(
 	client: NiFiBaseClient,
 	database: ProcessorDatabase,
-	processGroupId: string
+	processGroupId: string,
+	config: Config
 ): Promise<void> {
 	console.log(`🚀 Starting analysis for process group: ${processGroupId}`);
 
@@ -28,6 +30,10 @@ async function analyzeProcessGroups(
 			console.log(
 				`📊 Processing group: ${processGroup.component.name} (${processGroup.component.id})`
 			);
+
+			if(!config.provenance.enabled){
+				console.log('❌ No Provenance');
+			}
 
 			try {
 				processedGroups++;
@@ -54,6 +60,19 @@ async function analyzeProcessGroups(
 					);
 
 					database.insertStatusHistory(processor.id, statusHistory);
+
+					if (config.provenance.enabled) {
+						const allProvenance =
+							streamAllProvenanceEventsForProcessor(
+								client,
+								processor.id
+							);
+
+						for await (const provenanceBulk of allProvenance) {
+							database.insertProvenances(provenanceBulk);
+						}
+					}
+
 					console.log(
 						chalk.hex('#9e099eff')(
 							`Inserted ${
@@ -128,7 +147,7 @@ export async function run(_config: Partial<Config> = {}): Promise<void> {
 		});
 
 		// Create database
-		const database = new ProcessorDatabase(config.dbPath);
+		const database = new ProcessorDatabase(config.dbPath, config);
 
 		// Determine which process group to analyze
 		let processGroupId = config.pgId;
@@ -143,7 +162,7 @@ export async function run(_config: Partial<Config> = {}): Promise<void> {
 		console.log(`\n🎯 Selected process group: ${processGroupId}\n`);
 
 		// Perform analysis
-		await analyzeProcessGroups(client, database, processGroupId);
+		await analyzeProcessGroups(client, database, processGroupId, config);
 
 		// Close database connection
 		await database.close();
@@ -155,7 +174,7 @@ export async function run(_config: Partial<Config> = {}): Promise<void> {
 		);
 	} catch (error) {
 		console.error('❌ Fatal error:', error);
-		
+
 		if (!_config.noExit) {
 			process.exit(1);
 		}
@@ -168,4 +187,5 @@ export function uuid() {
 		return r.toString(16);
 	});
 }
+
 

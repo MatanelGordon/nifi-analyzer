@@ -137,6 +137,44 @@ Stores information about connections between processors and other components.
 | back_pressure_data_size_threshold | VARCHAR | Maximum data size for back pressure |
 | flow_file_expiration | VARCHAR | Duration after which flowfiles expire |
 
+### provenance_events
+Stores provenance event records that track the lifecycle and transformations of FlowFiles through the NiFi dataflow. Each row represents a single event that occurred to a FlowFile, such as creation, modification, routing, or deletion.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INTEGER PRIMARY KEY | Unique identifier for the provenance event |
+| event_time | INTEGER | Timestamp when the event occurred (Unix timestamp in milliseconds) |
+| event_duration | INTEGER | Duration of the event in milliseconds |
+| lineage_duration | INTEGER | Total time the FlowFile has been in the system in milliseconds |
+| event_type | VARCHAR | Type of event (CREATE, RECEIVE, SEND, FETCH, EXPIRE, DROP, etc.) |
+| flowfile_uuid | VARCHAR NOT NULL | Unique identifier of the FlowFile associated with this event |
+| flowfile_size_bytes | INTEGER | Size of the FlowFile in bytes at the time of this event |
+| pg_id | VARCHAR | Process Group ID where the event occurred |
+| processor_id | VARCHAR | Processor ID that generated this event (FK to processors_info.id) |
+| content_equal | INTEGER | Boolean flag indicating if content remained unchanged (0=false, 1=true) |
+| node_id | VARCHAR | Node ID where the event occurred in a cluster setup |
+
+### provenance_events_attributes
+Stores FlowFile attributes associated with each provenance event. This table provides metadata and context about the FlowFile at the time of the event, including custom attributes set by processors.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| event_id | INTEGER NOT NULL | Reference to the provenance event (FK to provenance_events.id) |
+| flowfile_uuid | VARCHAR NOT NULL | FlowFile UUID for quick lookup |
+| name | VARCHAR NOT NULL | Name of the attribute |
+| value | VARCHAR NOT NULL | Value of the attribute |
+| PRIMARY KEY | (event_id, flowfile_uuid) | Composite primary key |
+
+### provenance_events_flowfile_relationships
+Stores parent-child relationships between FlowFiles that result from splitting, merging, or other operations that create or modify FlowFile lineage. This table tracks how FlowFiles are related to each other through processing events.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| event_id | INTEGER NOT NULL | Reference to the provenance event (FK to provenance_events.id) |
+| parent_flowfile_uuid | VARCHAR NOT NULL | UUID of the parent FlowFile |
+| child_flowfile_uuid | VARCHAR NOT NULL | UUID of the child FlowFile |
+| PRIMARY KEY | (event_id, parent_flowfile_uuid, child_flowfile_uuid) | Composite primary key |
+
 ## Important Analysis Notes
 
 ### Performance Bottleneck Analysis
@@ -249,9 +287,36 @@ This query:
 - Calculates average lineage duration (time data spends in the flow) for each type
 - Orders results to show most time-consuming processor types first
 
+### Find Biggest FlowFiles with Specific Attribute Condition
+Retrieves the top 5 largest FlowFiles where the attribute 'a' has a length greater than 4:
+```sql
+SELECT 
+    pe.flowfile_uuid,
+    pe.flowfile_size_bytes,
+    pe.event_type,
+    pe.event_time,
+    pea.value AS attribute_a_value
+FROM provenance_events pe
+JOIN provenance_events_attributes pea ON pe.id = pea.event_id
+WHERE pea.name = 'a' 
+    AND LENGTH(pea.value) > 4
+ORDER BY pe.flowfile_size_bytes DESC
+LIMIT 5;
+```
+This query:
+- Joins provenance_events with provenance_events_attributes tables
+- Filters for events where attribute name is 'a' and value length > 4
+- Orders by FlowFile size in descending order
+- Returns the top 5 largest FlowFiles meeting the criteria
+- Includes additional context like event type and timestamp
+
 Note for LLMs: When querying this schema:
 - Use JOINs with connections_targets when you need source/destination names
 - Use processor_id to link processor properties with their main info
 - Timestamp in processors_status_history is Unix timestamp (milliseconds)
 - Properties in processors_properties are key-value pairs for each processor
 - Back pressure thresholds may use different units (count vs size)
+- Provenance events track the complete lifecycle of FlowFiles through the system
+- Use provenance_events_attributes to filter or analyze based on FlowFile metadata
+- FlowFile relationships show parent-child connections from splitting/merging operations
+- Nifi References md files are at `./nifi/md`. read those files to have a better understanding about Apache Nifi.

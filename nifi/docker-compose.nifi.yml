@@ -1,0 +1,39 @@
+services:
+  nifi1:
+    image: apache/nifi:1.28.0
+    ports:
+      - "8080:8080"
+      - "6000:6000"
+      - "6001:6001"
+    env_file:
+      - .local-nifi.env
+    volumes:
+      - ./.data/v1/state:/opt/nifi/nifi-current/state
+      - ./.data/v1/database_repository:/opt/nifi/nifi-current/database_repository
+      - ./.data/v1/flowfile_repository:/opt/nifi/nifi-current/flowfile_repository
+      - ./.data/v1/content_repository:/opt/nifi/nifi-current/content_repository
+      - ./.data/v1/provenance_repository:/opt/nifi/nifi-current/provenance_repository
+      - ./.data/v1/conf:/opt/nifi/nifi-current/conf
+    networks:
+      - default
+  
+  nifi2:
+    image: apache/nifi:2.2.0
+    ports:
+      - "8080:8080"
+    env_file:
+      - .local-nifi.env
+    volumes:
+      - ./.data/v2/state:/opt/nifi/nifi-current/state
+      - ./.data/v2/database_repository:/opt/nifi/nifi-current/database_repository
+      - ./.data/v2/flowfile_repository:/opt/nifi/nifi-current/flowfile_repository
+      - ./.data/v2/content_repository:/opt/nifi/nifi-current/content_repository
+      - ./.data/v2/provenance_repository:/opt/nifi/nifi-current/provenance_repository
+      - ./.data/v2/conf:/opt/nifi/nifi-current/conf
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
+    external: false

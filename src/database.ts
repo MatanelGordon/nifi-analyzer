@@ -1,24 +1,33 @@
 import Database from 'better-sqlite3';
 import md5 from 'md5';
+import fs from 'fs';
+import path from 'path';
 import { ProcessorInfo } from './get-processors.js';
 import { StatusHistory } from './get-status-history.js';
 import { ConnectionInfo } from './get-connections.js';
+import { Config } from './config.js';
+import { ProvenanceEventDTO } from './provenance-events.js';
 
 export class ProcessorDatabase {
 	private db: Database.Database | null = null;
 
-	constructor(private dbPath: string) {
+	constructor(private dbPath: string, private config: Config) {
 		// Database will be initialized on first use
 	}
 
 	private ensureConnection(): Database.Database {
 		if (!this.db) {
+			if (fs.existsSync(path.resolve(this.dbPath))) {
+				console.log(`File ${this.dbPath} exists - deleting...`);
+				fs.unlinkSync(this.dbPath);
+			}
+
 			this.db = new Database(this.dbPath);
 
 			// Initialize the table
 			const processorsInfoTable = `
         CREATE TABLE IF NOT EXISTS processors_info (
-          id VARCHAR PRIMARY KEY,
+          id VARCHAR NOT NULL PRIMARY KEY,
           name VARCHAR NOT NULL,
           type VARCHAR NOT NULL,
           run_duration INTEGER NOT NULL,
@@ -36,7 +45,7 @@ export class ProcessorDatabase {
     		processor_id VARCHAR NOT NULL,
     		name VARCHAR NOT NULL,
 			value VARCHAR,
-    		FOREIGN KEY (processor_id) REFERENCES processors_info(id)
+    		FOREIGN KEY (processor_id) REFERENCES processors_info(id) ON DELETE CASCADE
 		)`;
 
 			const nifiNodesTable = `
@@ -67,7 +76,7 @@ export class ProcessorDatabase {
             task_millis INTEGER NOT NULL DEFAULT 0,
             input_count INTEGER NOT NULL DEFAULT 0,
             PRIMARY KEY (timestamp),
-            FOREIGN KEY (processor_id) REFERENCES processors_info(id),
+            FOREIGN KEY (processor_id) REFERENCES processors_info(id) ON DELETE CASCADE,
             FOREIGN KEY (node_id) REFERENCES nodes_info(id)
         )
       `;
@@ -94,8 +103,8 @@ export class ProcessorDatabase {
 					back_pressure_object_threshold INTEGER,
 					back_pressure_data_size_threshold VARCHAR,
 					flow_file_expiration VARCHAR,
-					FOREIGN KEY (source_id) REFERENCES connections_targets(id),
-					FOREIGN KEY (destination_id) REFERENCES connections_targets(id)
+					FOREIGN KEY (source_id) REFERENCES connections_targets(id) ON DELETE CASCADE,
+					FOREIGN KEY (destination_id) REFERENCES connections_targets(id) ON DELETE CASCADE
 				)
 			`;
 
@@ -115,8 +124,70 @@ export class ProcessorDatabase {
 			console.log('✅ Database table "connections_targets" initialized');
 			this.db.prepare(connectionsInfoTable).run();
 			console.log('✅ Database table "connections_info" initialized');
+
+			this.createProvenanceTable();
 		}
+
 		return this.db;
+	}
+
+	private async createProvenanceTable() {
+		if (!this.config.provenance.enabled) return;
+
+		if (!this.db) {
+			throw new Error('NO this.db is found');
+		}
+
+		const provenanceEventTable = `
+			CREATE TABLE IF NOT EXISTS provenance_events (
+				id INTEGER NOT NULL PRIMARY KEY,
+				event_time INTEGER,
+				event_duration INTEGER,
+				lineage_duration INTEGER,
+				event_type VARCHAR,
+				flowfile_uuid VARCHAR NOT NULL,
+				flowfile_size_bytes INTEGER,
+				pg_id VARCHAR,
+				processor_id VARCHAR,
+				content_equal INTEGER,
+				node_id VARCHAR,
+				FOREIGN KEY (processor_id) REFERENCES processors_info(id)
+			)
+		`;
+
+		const provenanceEventsAttributes = `
+			CREATE TABLE IF NOT EXISTS provenance_events_attributes (
+				event_id INTEGER NOT NULL,
+				flowfile_uuid VARCHAR NOT NULL,
+				name VARCHAR NOT NULL,
+				value VARCHAR NOT NULL,
+				PRIMARY KEY (event_id, flowfile_uuid),
+				FOREIGN KEY (event_id) REFERENCES provenance_events(id) ON DELETE CASCADE
+			)
+		`;
+
+		const provenanceEventsFlowfileRelationships = `
+			CREATE TABLE IF NOT EXISTS provenance_events_flowfile_relationships (
+				event_id INTEGER NOT NULL,
+				parent_flowfile_uuid VARCHAR NOT NULL,
+				child_flowfile_uuid VARCHAR NOT NULL,
+				PRIMARY KEY (event_id, parent_flowfile_uuid, child_flowfile_uuid),
+				FOREIGN KEY (event_id) REFERENCES provenance_events(id) ON DELETE CASCADE
+			)
+		`;
+
+		this.db.prepare(provenanceEventTable).run();
+		console.log('✅ Database table "provenance_events" initialized');
+
+		this.db.prepare(provenanceEventsAttributes).run();
+		console.log(
+			'✅ Database table "provenance_events_attributes" initialized'
+		);
+
+		this.db.prepare(provenanceEventsFlowfileRelationships).run();
+		console.log(
+			'✅ Database table "provenance_events_flowfile_relationships" initialized'
+		);
 	}
 
 	public async insertProcessorsInfo(
@@ -354,6 +425,87 @@ export class ProcessorDatabase {
 		})();
 	}
 
+	public insertProvenances(provenanceEvents: ProvenanceEventDTO[]) {
+		const db = this.ensureConnection();
+
+		const insertToEvents = db.prepare(`
+			INSERT OR REPLACE INTO provenance_events (
+				id,
+				event_time,
+				event_duration,
+				lineage_duration,
+				event_type,
+				flowfile_uuid,
+				flowfile_size_bytes,
+				pg_id,
+				processor_id,
+				content_equal,
+				node_id
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		`);
+
+		const insertToAttributes = db.prepare(`
+			INSERT OR REPLACE INTO provenance_events_attributes (
+				event_id,
+				flowfile_uuid,
+				name,
+				value
+			) VALUES (?, ?, ?, ?)
+		`);
+
+		const insertToRelationship = db.prepare(`
+			INSERT OR REPLACE INTO provenance_events_flowfile_relationships (
+				event_id,
+				parent_flowfile_uuid,
+				child_flowfile_uuid
+			) VALUES (?, ?, ?)	
+		`);
+
+		for (const event of provenanceEvents) {
+			insertToEvents.run(
+				+event.id,
+				event.eventTime ? new Date(event.eventTime).getTime() : null,
+				event.eventDuration ?? null,
+				event.lineageDuration ?? null,
+				event.eventType ?? null,
+				event.flowFileUuid ?? null,
+				event.fileSizeBytes ?? null,
+				event.groupId ?? null,
+				event.componentId ?? null,
+				event.contentEqual !== undefined
+					? event.contentEqual
+						? 1
+						: 0
+					: null,
+				event.clusterNodeId ?? null
+			);
+		}
+
+		for (const { attributes, id, flowFileUuid } of provenanceEvents) {
+			if (!attributes) continue;
+
+			for (const attr of attributes) {
+				insertToAttributes.run(id, flowFileUuid, attr.name, attr.value);
+			}
+		}
+
+		for (const { childUuids, id, flowFileUuid } of provenanceEvents) {
+			if (!childUuids) continue;
+
+			for (const childId of childUuids) {
+				insertToRelationship.run(id, flowFileUuid, childId);
+			}
+		}
+
+		for (const { parentUuids, id, flowFileUuid } of provenanceEvents) {
+			if (!parentUuids) continue;
+
+			for (const parentId of parentUuids) {
+				insertToRelationship.run(id, parentId, flowFileUuid);
+			}
+		}
+	}
+
 	public async getProcessorCount(): Promise<number> {
 		const db = this.ensureConnection();
 		const row = db
@@ -425,5 +577,12 @@ export class ProcessorDatabase {
 		console.log('✅ Database connection closed');
 	}
 }
+
+
+
+
+
+
+
 
 
