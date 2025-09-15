@@ -20,7 +20,7 @@ Tired of not understanding why your Nifi sucks?
 ## What Can I do with it?
 
 - 🔍 Detect bottlenecks
-- 📊 create your own visualizations (not just "View Status History")
+- 📊 create your own visualizations (not just "View Status History") using Datagrip, Apache superset, or maybe your own UI.
 
 ## Database Schema
 
