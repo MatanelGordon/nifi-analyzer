@@ -36,13 +36,20 @@ function parseArgs(argv: string[]): Partial<Config> {
       'pg-id': {
         type: 'string',
         description: 'Process group ID to analyze',
+      },
+      'provenance': {
+        type: 'number',
+        description: 'Amount of provenance events to collect for each processor (0 means no provenance)',
         alias: 'p',
+        default: 100000,
       },
     })
     .help()
     .alias('help', 'h')
     .example('$0 --nifi-url https://nifi:8080 --auth admin:password', 'Connect to NiFi instance with credentials')
-    .example('$0 --pg-id abc-123-def-456', 'Analyze specific process group');
+    .example('$0 --pg-id abc-123-def-456', 'Analyze specific process group')
+    .example('$0 --provenance 50000', 'Collect up to 50000 provenance events per processor')
+    .example('$0 -p 0', 'Disable provenance collection');
 
   const args = yargsInstance.parseSync();
 
@@ -61,6 +68,14 @@ function parseArgs(argv: string[]): Partial<Config> {
   if (authConfig.username) config.nifiUsername = authConfig.username;
   if (authConfig.password) config.nifiPassword = authConfig.password;
   if (args['pg-id']) config.pgId = args['pg-id'];
+  
+  // Handle provenance configuration
+  if (args.provenance !== undefined) {
+    config.provenance = {
+      enabled: args.provenance > 0,
+      maxResults: args.provenance
+    };
+  }
   
   return config;
 }

@@ -27,68 +27,86 @@ Tired of not understanding why your Nifi sucks?
 The application stores information in multiple tables to enable detailed analysis:
 
 ### Core Tables
+
+#### Processor Tables
+
 - `processors_info`: Basic processor configuration and settings
 - `processors_properties`: Processor-specific property configurations
 - `processors_status_history`: Historical performance metrics
+
+#### Connection Tables
+
 - `connections_info`: Information about connections between processors
 - `connections_targets`: Details about connection endpoints
+
+#### Provenance Tables
+
+- `provenance_events`: Records of FlowFile lifecycle events
+- `provenance_events_attributes`: FlowFile attributes at event time
+- `provenance_events_flowfile_relationships`: Parent-child relationships between FlowFiles
+
+#### System Tables
+
 - `nodes_info`: Information about NiFi cluster nodes
 
 For detailed schema information, see [llm.md](llm.md).
 
 ## Quick Start
 
-### Usage
+> **Note**: If you don't have a NiFi instance running, it's recommended to start a local one first. See [Local NiFi Setup](#local-nifi-setup-optional) for instructions.
 
- > If you are looking to run a local nifi instance, please refer to [Local NIfi Setup](#local-nifi-setup-optional)
-1. **Install dependencies:**
-   ```bash
-   pnpm install
-   ```
+### Requirements
 
-2. **Set environment variables:**
+- Node.js >= 20.0.0
+- pnpm >= 8.0.0
 
-   Example Using the provided local nifi instance:
+### Running the Application
 
-   ```bash
-   export NIFI_URL="https://localhost:8080"
-   export NIFI_USERNAME="admin"
-   export NIFI_PASSWORD="12345678Admin!"
-   export PG_ID="root"  # Optional: specific process group ID
-   ```
+There are two ways to run this application:
 
-3. **Run the analyzer:**
-
-   CLI Mode:
-
-   ```bash
-   pnpm start
-   ```
-
-   Web UI Mode:
-
-   ```bash
-   pnpm start:server
-   ```
-
-   This will start an HTTP server with a web UI and an automated analysis route. While the server provides detailed console logging, please note that it has limited exception handling. Keep an eye on system logs for any unexpected issues.
-
-### Standalone Analyzer for External NiFi
-
-To run just the analyzer against an external NiFi instance:
+#### 1. Web UI Mode (With Express Server)
 
 ```bash
-# Set environment variables for external NiFi
-export NIFI_URL="https://your-external-nifi.com:8080"
-export NIFI_USERNAME="your-username"
-export NIFI_PASSWORD="your-password"
-export DB_PATH="./output.db"  # Local SQLite file
+# Install dependencies
+pnpm install
 
-# Run the analyzer
-pnpm start
+# Start the server
+pnpm start:server
 ```
 
-This will create a local `output.db` SQLite file that you can analyze directly with any SQLite client.
+#### 2. Script Mode
+
+The script located in `src/script` directory accepts the following parameters:
+
+- `--nifi-url` (`-u`): URL of the NiFi instance
+- `--auth` (`-a`): Credentials in format `username:password`
+- `--pg-id`: Process group ID to analyze
+- `--provenance` (`-p`): Amount of provenance events to collect per processor (default: 100000, 0 to disable)
+
+Examples:
+
+```bash
+# Analyze root process group
+pnpm start:script --nifi-url https://localhost:8080 --auth admin:password
+
+# Analyze specific process group with custom provenance events limit
+pnpm start:script --nifi-url https://localhost:8080 --auth admin:password --pg-id abc-123-def-456 --provenance 50000
+
+# Analyze without collecting provenance events
+pnpm start:script --nifi-url https://localhost:8080 --auth admin:password -p 0
+```
+
+### Configuration via Environment Variables
+
+The application can also be configured using environment variables:
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `NIFI_URL` | URL of the NiFi instance | Yes |
+| `NIFI_USERNAME` | NiFi username for authentication | Yes |
+| `NIFI_PASSWORD` | NiFi password for authentication | Yes |
+| `PG_ID` | Process group ID to analyze | No (defaults to root) |
+| `DB_PATH` | Custom path for the SQLite database | No (defaults to ./data/output.db) |
 
 ### Local NiFi Setup (Optional)
 
@@ -134,7 +152,7 @@ scripts\stop-nifi.bat v2
 - `NIFI_USERNAME` - NiFi username
 - `NIFI_PASSWORD` - NiFi password
 - `PG_ID` - Process Group ID to analyze (default: prompts for selection)
-- `DB_PATH` - SQLite database path (default: `/data/output.db`)
+- `DB_PATH` - SQLite database path (default: `./data/output.db`)
 
 ### Process Group Selection
 
@@ -328,7 +346,7 @@ The application provides detailed logging:
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - pnpm
 - TypeScript
 - Docker & Docker Compose
