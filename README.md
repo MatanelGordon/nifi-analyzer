@@ -14,6 +14,9 @@ Tired of not understanding why your Nifi sucks?
 - 💾 Stores data in SQLite database with structured schema
 - **LLM compatible** - `llm.md` can help Language Models create SQL queries for you.
 
+<img width="890" height="701" alt="image" src="https://github.com/user-attachments/assets/9ef43502-60d5-4dd0-bb05-739874b347ca" />
+
+
 ## What Can I do with it?
 
 - 🔍 Detect bottlenecks
