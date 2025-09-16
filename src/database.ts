@@ -632,13 +632,3 @@ export class ProcessorDatabase {
 		console.log('✅ Database connection closed');
 	}
 }
-
-
-
-
-
-
-
-
-
-
