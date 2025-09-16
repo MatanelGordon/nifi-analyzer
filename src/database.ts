@@ -75,7 +75,6 @@ export class ProcessorDatabase {
             input_bytes INTEGER NOT NULL DEFAULT 0,
             task_millis INTEGER NOT NULL DEFAULT 0,
             input_count INTEGER NOT NULL DEFAULT 0,
-            PRIMARY KEY (timestamp),
             FOREIGN KEY (processor_id) REFERENCES processors_info(id) ON DELETE CASCADE,
             FOREIGN KEY (node_id) REFERENCES nodes_info(id)
         )
@@ -110,15 +109,30 @@ export class ProcessorDatabase {
 
 			this.db.prepare(processorsInfoTable).run();
 			console.log('✅ Database table "processors_info" initialized');
+
 			this.db.prepare(processorsPropertiesTable).run();
+			// Index for searching properties by name
+			this.db
+				.prepare(
+					'CREATE INDEX IF NOT EXISTS idx_processors_properties_name ON processors_properties(name)'
+				)
+				.run();
 			console.log(
-				'✅ Database table "processors_properties" initialized'
+				'✅ Database table "processors_properties" and indexes initialized'
 			);
+
 			this.db.prepare(nifiNodesTable).run();
 			console.log('✅ Database table "nodes_info" initialized');
+
 			this.db.prepare(processorsStatusHistoryTable).run();
+			// Index for time-based queries on status history
+			this.db
+				.prepare(
+					'CREATE INDEX IF NOT EXISTS idx_processors_status_history_timestamp ON processors_status_history(timestamp)'
+				)
+				.run();
 			console.log(
-				'✅ Database table "processors_status_history" initialized'
+				'✅ Database table "processors_status_history" and indexes initialized'
 			);
 			this.db.prepare(connectionTargetsTable).run();
 			console.log('✅ Database table "connections_targets" initialized');
@@ -177,11 +191,44 @@ export class ProcessorDatabase {
 		`;
 
 		this.db.prepare(provenanceEventTable).run();
-		console.log('✅ Database table "provenance_events" initialized');
+
+		// Create indexes for provenance_events
+		this.db
+			.prepare(
+				'CREATE INDEX IF NOT EXISTS idx_provenance_events_flowfile_uuid ON provenance_events(flowfile_uuid)'
+			)
+			.run();
+		this.db
+			.prepare(
+				'CREATE INDEX IF NOT EXISTS idx_provenance_events_event_time ON provenance_events(event_time)'
+			)
+			.run();
+		this.db
+			.prepare(
+				'CREATE INDEX IF NOT EXISTS idx_provenance_events_event_type ON provenance_events(event_type)'
+			)
+			.run();
+		this.db
+			.prepare(
+				'CREATE INDEX IF NOT EXISTS idx_provenance_events_pg_id ON provenance_events(pg_id)'
+			)
+			.run();
+
+		console.log(
+			'✅ Database table "provenance_events" and indexes initialized'
+		);
 
 		this.db.prepare(provenanceEventsAttributes).run();
+
+		// Create index for attribute name lookups
+		this.db
+			.prepare(
+				'CREATE INDEX IF NOT EXISTS idx_provenance_events_attributes_name ON provenance_events_attributes(name)'
+			)
+			.run();
+
 		console.log(
-			'✅ Database table "provenance_events_attributes" initialized'
+			'✅ Database table "provenance_events_attributes" and indexes initialized'
 		);
 
 		this.db.prepare(provenanceEventsFlowfileRelationships).run();
@@ -514,6 +561,14 @@ export class ProcessorDatabase {
 		return (row && (row.count as number)) || 0;
 	}
 
+	public async getProvenanceCount(): Promise<number> {
+		const db = this.ensureConnection();
+		const row = db
+			.prepare('SELECT COUNT(DISTINCT ) as count FROM provenance_events')
+			.get() as any;
+		return (row && (row.count as number)) || 0;
+	}
+
 	public async getAllProcessors(): Promise<ProcessorInfo[]> {
 		const db = this.ensureConnection();
 		const rows = db.prepare('SELECT * FROM processors_info').all();
@@ -577,6 +632,7 @@ export class ProcessorDatabase {
 		console.log('✅ Database connection closed');
 	}
 }
+
 
 
 
