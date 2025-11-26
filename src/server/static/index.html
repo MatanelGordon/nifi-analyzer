@@ -69,9 +69,120 @@
 			</div>
             <div class="footer">
                 <button class="nifi-button" id="analyze">Analyze</button>
+                <button class="nifi-button2" id="setup-llm" type="button">Set up LLM</button>
 				<a class="nifi-button2" id="get-file" download style="display: none;">Get File</a>
             </div>
             <p class="output" id="output"></p>
 		</form>
+
+		<!-- LLM Setup Modal -->
+		<dialog id="llm-modal" class="llm-modal">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2>LLM Setup Instructions</h2>
+					<button class="close-btn" id="close-modal">&times;</button>
+				</div>
+				<div class="modal-body">
+					<span class="instruction">Copy the following content to your LLM (ChatGPT, Claude, etc.):</span>
+					<div class="content-container">
+						<pre id="llm-content" class="llm-content">Loading...</pre>
+						<button class="copy-btn nifi-button" id="copy-content">Copy</button>
+					</div>
+				</div>
+			</div>
+		</dialog>
+
+		<script>
+			// LLM Modal functionality
+			const setupLlmBtn = document.getElementById('setup-llm');
+			const llmModal = document.getElementById('llm-modal');
+			const closeModalBtn = document.getElementById('close-modal');
+			const copyContentBtn = document.getElementById('copy-content');
+			const llmContentPre = document.getElementById('llm-content');
+
+			// Load LLM content
+			async function loadLlmContent() {
+				llmContentPre.textContent = 'Loading...';
+				try {
+					const response = await fetch('/llm.md');
+					if (response.ok) {
+						const content = await response.text();
+						if (content.trim()) {
+							llmContentPre.textContent = content;
+						} else {
+							llmContentPre.textContent = 'LLM content is empty. Please check if llm.md exists.';
+						}
+					} else {
+						llmContentPre.textContent = `Error loading LLM content. Status: ${response.status}. Please try again.`;
+					}
+				} catch (error) {
+					console.error('Error loading LLM content:', error);
+					llmContentPre.textContent = 'Error loading LLM content: ' + error.message;
+				}
+			}
+
+			// Open modal
+			setupLlmBtn.addEventListener('click', () => {
+				llmModal.showModal();
+				loadLlmContent();
+			});
+
+			// Close modal
+			closeModalBtn.addEventListener('click', () => {
+				llmModal.close();
+			});
+
+			// Close modal when clicking outside
+			llmModal.addEventListener('click', (e) => {
+				if (e.target === llmModal) {
+					llmModal.close();
+				}
+			});
+
+			// Close modal with Escape key
+			document.addEventListener('keydown', (e) => {
+				if (e.key === 'Escape' && llmModal.open) {
+					llmModal.close();
+				}
+			});
+
+			// Copy content to clipboard
+			copyContentBtn.addEventListener('click', async () => {
+				try {
+					// Check if clipboard API is available (requires HTTPS or localhost)
+					if (navigator.clipboard && window.isSecureContext) {
+						await navigator.clipboard.writeText(llmContentPre.textContent);
+						copyContentBtn.textContent = 'Copied!';
+					} else {
+						// Fallback method
+						throw new Error('Clipboard API not available');
+					}
+				} catch (error) {
+					// Fallback for older browsers or non-secure contexts
+					try {
+						const textArea = document.createElement('textarea');
+						textArea.value = llmContentPre.textContent;
+						textArea.style.position = 'fixed';
+						textArea.style.left = '-999999px';
+						textArea.style.top = '-999999px';
+						document.body.appendChild(textArea);
+						textArea.focus();
+						textArea.select();
+						const successful = document.execCommand('copy');
+						document.body.removeChild(textArea);
+						if (successful) {
+							copyContentBtn.textContent = 'Copied!';
+						} else {
+							copyContentBtn.textContent = 'Failed!';
+						}
+					} catch (fallbackError) {
+						copyContentBtn.textContent = 'Failed!';
+					}
+				}
+				setTimeout(() => {
+					copyContentBtn.textContent = 'Copy';
+				}, 3000);
+			});
+		</script>
 	</body>
 </html>
