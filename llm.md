@@ -163,7 +163,7 @@ Stores FlowFile attributes associated with each provenance event. This table pro
 | flowfile_uuid | VARCHAR NOT NULL | FlowFile UUID for quick lookup |
 | name | VARCHAR NOT NULL | Name of the attribute |
 | value | VARCHAR NOT NULL | Value of the attribute |
-| PRIMARY KEY | (event_id, flowfile_uuid) | Composite primary key |
+| PRIMARY KEY | (event_id, name, flowfile_uuid) | Composite primary key |
 
 ### provenance_events_flowfile_relationships
 Stores parent-child relationships between FlowFiles that result from splitting, merging, or other operations that create or modify FlowFile lineage. This table tracks how FlowFiles are related to each other through processing events.
@@ -311,6 +311,7 @@ This query:
 - Includes additional context like event type and timestamp
 
 Note for LLMs: When querying this schema:
+
 - Use JOINs with connections_targets when you need source/destination names
 - Use processor_id to link processor properties with their main info
 - Timestamp in processors_status_history is Unix timestamp (milliseconds)

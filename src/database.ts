@@ -45,7 +45,7 @@ export class ProcessorDatabase {
     		processor_id VARCHAR NOT NULL,
     		name VARCHAR NOT NULL,
 			value VARCHAR,
-    		FOREIGN KEY (processor_id) REFERENCES processors_info(id) ON DELETE CASCADE
+    		FOREIGN KEY (processor_id) REFERENCES processors_info(id)
 		)`;
 
 			const nifiNodesTable = `
@@ -75,7 +75,7 @@ export class ProcessorDatabase {
             input_bytes INTEGER NOT NULL DEFAULT 0,
             task_millis INTEGER NOT NULL DEFAULT 0,
             input_count INTEGER NOT NULL DEFAULT 0,
-            FOREIGN KEY (processor_id) REFERENCES processors_info(id) ON DELETE CASCADE,
+            FOREIGN KEY (processor_id) REFERENCES processors_info(id),
             FOREIGN KEY (node_id) REFERENCES nodes_info(id)
         )
       `;
@@ -175,8 +175,8 @@ export class ProcessorDatabase {
 				flowfile_uuid VARCHAR NOT NULL,
 				name VARCHAR NOT NULL,
 				value VARCHAR NOT NULL,
-				PRIMARY KEY (event_id, flowfile_uuid),
-				FOREIGN KEY (event_id) REFERENCES provenance_events(id) ON DELETE CASCADE
+				PRIMARY KEY (event_id, name, flowfile_uuid),
+				FOREIGN KEY (event_id) REFERENCES provenance_events(id)
 			)
 		`;
 
@@ -186,7 +186,7 @@ export class ProcessorDatabase {
 				parent_flowfile_uuid VARCHAR NOT NULL,
 				child_flowfile_uuid VARCHAR NOT NULL,
 				PRIMARY KEY (event_id, parent_flowfile_uuid, child_flowfile_uuid),
-				FOREIGN KEY (event_id) REFERENCES provenance_events(id) ON DELETE CASCADE
+				FOREIGN KEY (event_id) REFERENCES provenance_events(id)
 			)
 		`;
 
@@ -557,14 +557,6 @@ export class ProcessorDatabase {
 		const db = this.ensureConnection();
 		const row = db
 			.prepare('SELECT COUNT(*) as count FROM processors_info')
-			.get() as any;
-		return (row && (row.count as number)) || 0;
-	}
-
-	public async getProvenanceCount(): Promise<number> {
-		const db = this.ensureConnection();
-		const row = db
-			.prepare('SELECT COUNT(DISTINCT ) as count FROM provenance_events')
 			.get() as any;
 		return (row && (row.count as number)) || 0;
 	}
