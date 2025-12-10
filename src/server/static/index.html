@@ -86,7 +86,10 @@
 					<span class="instruction">Copy the following content to your LLM (ChatGPT, Claude, etc.):</span>
 					<div class="content-container">
 						<pre id="llm-content" class="llm-content">Loading...</pre>
-						<button class="copy-btn nifi-button" id="copy-content">Copy</button>
+						<div class="button-group">
+							<button class="copy-btn nifi-button" id="select-content">Select All</button>
+							<button class="copy-btn nifi-button" id="copy-content">Copy</button>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -148,40 +151,86 @@
 
 			// Copy content to clipboard
 			copyContentBtn.addEventListener('click', async () => {
-				try {
-					// Check if clipboard API is available (requires HTTPS or localhost)
-					if (navigator.clipboard && window.isSecureContext) {
-						await navigator.clipboard.writeText(llmContentPre.textContent);
-						copyContentBtn.textContent = 'Copied!';
-					} else {
-						// Fallback method
-						throw new Error('Clipboard API not available');
-					}
-				} catch (error) {
-					// Fallback for older browsers or non-secure contexts
+				let success = false;
+				
+				// Try modern Clipboard API first (requires HTTPS or localhost)
+				if (navigator.clipboard && window.isSecureContext) {
 					try {
+						await navigator.clipboard.writeText(llmContentPre.textContent);
+						success = true;
+					} catch (error) {
+						console.warn('Clipboard API failed:', error);
+					}
+				}
+				
+				// Fallback for HTTP or older browsers
+				if (!success) {
+					try {
+						// Create a temporary textarea
 						const textArea = document.createElement('textarea');
 						textArea.value = llmContentPre.textContent;
+						
+						// Style to be invisible but still interactable
+						textArea.style.top = '0';
+						textArea.style.left = '0';
 						textArea.style.position = 'fixed';
-						textArea.style.left = '-999999px';
-						textArea.style.top = '-999999px';
+						textArea.style.width = '2em';
+						textArea.style.height = '2em';
+						textArea.style.padding = '0';
+						textArea.style.border = 'none';
+						textArea.style.outline = 'none';
+						textArea.style.boxShadow = 'none';
+						textArea.style.background = 'transparent';
+						
 						document.body.appendChild(textArea);
 						textArea.focus();
 						textArea.select();
-						const successful = document.execCommand('copy');
-						document.body.removeChild(textArea);
-						if (successful) {
-							copyContentBtn.textContent = 'Copied!';
-						} else {
-							copyContentBtn.textContent = 'Failed!';
+						
+						// Try to copy
+						try {
+							success = document.execCommand('copy');
+							console.log('execCommand result:', success);
+						} catch (err) {
+							console.error('execCommand error:', err);
 						}
+						
+						document.body.removeChild(textArea);
 					} catch (fallbackError) {
-						copyContentBtn.textContent = 'Failed!';
+						console.error('Fallback copy failed:', fallbackError);
 					}
 				}
+				
+				// Update button text
+				if (success) {
+					copyContentBtn.textContent = 'Copied!';
+				} else {
+					// If both methods failed, show instruction to manually copy
+					copyContentBtn.textContent = 'Select & Copy Manually';
+					// Select the pre element content for manual copying
+					const selection = window.getSelection();
+					const range = document.createRange();
+					range.selectNodeContents(llmContentPre);
+					selection.removeAllRanges();
+					selection.addRange(range);
+				}
+				
 				setTimeout(() => {
 					copyContentBtn.textContent = 'Copy';
 				}, 3000);
+			});
+
+			// Select all content
+			const selectContentBtn = document.getElementById('select-content');
+			selectContentBtn.addEventListener('click', () => {
+				const selection = window.getSelection();
+				const range = document.createRange();
+				range.selectNodeContents(llmContentPre);
+				selection.removeAllRanges();
+				selection.addRange(range);
+				selectContentBtn.textContent = 'Selected!';
+				setTimeout(() => {
+					selectContentBtn.textContent = 'Select All';
+				}, 2000);
 			});
 		</script>
 	</body>

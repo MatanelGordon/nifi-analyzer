@@ -321,3 +321,89 @@ Note for LLMs: When querying this schema:
 - Use provenance_events_attributes to filter or analyze based on FlowFile metadata
 - FlowFile relationships show parent-child connections from splitting/merging operations
 - Nifi References md files are at `./nifi/md`. read those files to have a better understanding about Apache Nifi.
+
+### Recursive Query: Get All Connected Processors with Combined Status History
+
+Retrieves all processors in the path from a source component to a destination component, along with their individual status history data points for time-series analysis:
+
+```sql
+WITH RECURSIVE processor_path AS (
+    -- Base case: start from the source component
+    SELECT 
+        c.destination_id AS component_id,
+        c.source_id AS path_source,
+        1 AS depth,
+        c.destination_id AS path
+    FROM connections_info c
+    WHERE c.source_id = 'SOURCE_COMPONENT_ID'  -- Replace with actual source component ID
+    
+    UNION ALL
+    
+    -- Recursive case: follow connections from current component
+    SELECT 
+        c.destination_id AS component_id,
+        pp.path_source,
+        pp.depth + 1,
+        pp.path || ' -> ' || c.destination_id AS path
+    FROM connections_info c
+    JOIN processor_path pp ON c.source_id = pp.component_id
+    WHERE pp.depth < 50  -- Prevent infinite loops
+        AND c.destination_id != 'SOURCE_COMPONENT_ID'  -- Prevent cycles
+        AND pp.component_id != 'DESTINATION_COMPONENT_ID'  -- Stop when reaching destination
+)
+SELECT 
+    pp.component_id,
+    ct.name AS processor_name,
+    ct.type AS processor_type,
+    pp.depth AS distance_from_source,
+    pp.path AS connection_path,
+    -- Individual status history data points for each timestamp and node
+    psh.node_id,
+    psh.timestamp,
+    psh.average_lineage_duration,
+    psh.bytes_read,
+    psh.bytes_written,
+    psh.bytes_transferred,
+    psh.input_count,
+    psh.output_count,
+    psh.input_bytes,
+    psh.output_bytes,
+    psh.task_millis,
+    psh.task_nanos,
+    psh.average_task_nanos,
+    psh.task_count,
+    psh.flow_files_removed
+FROM processor_path pp
+JOIN connections_targets ct ON pp.component_id = ct.id
+LEFT JOIN processors_status_history psh ON ct.id = psh.processor_id
+WHERE ct.type = 'PROCESSOR'  -- Filter for processors only
+ORDER BY pp.depth, pp.component_id, psh.timestamp;
+```
+
+This query:
+
+- Uses a recursive CTE to traverse the connection graph from source to destination
+- Tracks the depth (distance) from the source component
+- Builds a visual path showing the connection flow
+- Joins with `connections_targets` to get processor details
+- Returns individual data points (not aggregated) for each processor at each timestamp and node
+- Prevents infinite loops with a depth limit and cycle detection
+- Filters to include only processors (not funnels or ports)
+- Orders by depth, component, and timestamp for easy time-series visualization
+
+To use this query:
+
+1. Replace `'SOURCE_COMPONENT_ID'` with the starting processor/component ID
+2. Replace `'DESTINATION_COMPONENT_ID'` with the ending processor/component ID (or remove this condition to get all downstream processors)
+3. Adjust the depth limit (50) based on your flow complexity
+4. Add time-based filters like `AND psh.timestamp BETWEEN <start> AND <end>` to limit the time range
+5. Filter by specific node using `AND psh.node_id = 'TOTAL'` for aggregated metrics or specific node IDs
+
+Use cases:
+
+- Creating time-series charts for each processor's performance metrics
+- Comparing processor performance across different nodes in a cluster
+- Analyzing end-to-end performance of a data processing pipeline over time
+- Identifying bottlenecks in a specific flow path at different time periods
+- Building dashboards with historical trends for connected processors
+

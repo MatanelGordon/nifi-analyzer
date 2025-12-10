@@ -124,4 +124,4 @@ temp/
 
 # Data directories (these should be mounted as volumes)
 data/
-.nifi/
+nifi/
