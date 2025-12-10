@@ -294,3 +294,66 @@ body {
 	height: 2.5rem;
 	font-size: 1rem;
 }
+
+/* Help Button Styles */
+.help-button {
+	position: fixed;
+	top: 1.5rem;
+	right: 1.5rem;
+	width: 3rem;
+	height: 3rem;
+	border-radius: 50%;
+	background: var(--accent-color);
+	color: var(--primary-color);
+	border: none;
+	font-size: 1.5rem;
+	font-weight: bold;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 200ms ease;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+	z-index: 1000;
+}
+
+.help-button:hover {
+	transform: scale(1.1);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.help-button:active {
+	transform: scale(0.95);
+}
+
+/* Help Content Styles */
+.help-content {
+	overflow-y: auto;
+}
+
+.help-content h3 {
+	color: var(--accent-color);
+	margin-top: 1.5rem;
+	margin-bottom: 0.5rem;
+	font-size: 1.2rem;
+	font-weight: 500;
+}
+
+.help-content h3:first-child {
+	margin-top: 0;
+}
+
+.help-content p {
+	line-height: 1.6;
+	margin: 0.5rem 0;
+}
+
+.help-content ul, .help-content ol {
+	line-height: 1.8;
+	margin: 0.5rem 0;
+	padding-left: 1.5rem;
+}
+
+.help-content li {
+	margin: 0.25rem 0;
+}

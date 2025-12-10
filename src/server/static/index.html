@@ -9,6 +9,7 @@
 		<title>Nifi Analyzer</title>
 	</head>
 	<body>
+		<button class="help-button" id="help-btn" type="button" title="About this project">?</button>
 		<form class="content-wrapper" id="analyze-form">
 			<h1 class="title">Nifi Analyzer</h1>
 			<div class="field">
@@ -90,6 +91,40 @@
 							<button class="copy-btn nifi-button" id="select-content">Select All</button>
 							<button class="copy-btn nifi-button" id="copy-content">Copy</button>
 						</div>
+					</div>
+				</div>
+			</div>
+		</dialog>
+
+		<!-- Help Modal -->
+		<dialog id="help-modal" class="llm-modal">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2>About NiFi Analyzer</h2>
+					<button class="close-btn" id="close-help-modal">&times;</button>
+				</div>
+				<div class="modal-body">
+					<div class="help-content">
+						<h3>What is NiFi Analyzer?</h3>
+						<p>NiFi Analyzer is a tool that extracts and analyzes data from Apache NiFi instances, storing it in a SQLite database for easy querying and analysis.</p>
+						
+						<h3>How it works:</h3>
+						<ol>
+							<li>Enter your NiFi instance URL and credentials</li>
+							<li>Click "Analyze" to extract processor information, connections, and performance metrics</li>
+							<li>Download the generated SQLite database file</li>
+							<li>Use the "Set up LLM" button to get schema documentation for AI-assisted queries</li>
+						</ol>
+
+						<h3>What data is collected:</h3>
+						<ul>
+							<li>Processor configurations and properties</li>
+							<li>Connection information and relationships</li>
+							<li>Performance metrics and status history</li>
+							<li>Provenance events (optional)</li>
+						</ul>
+
+						<p><strong>Note:</strong> All analysis is performed server-side. Your database file is automatically deleted after 10 minutes.</p>
 					</div>
 				</div>
 			</div>
@@ -231,6 +266,25 @@
 				setTimeout(() => {
 					selectContentBtn.textContent = 'Select All';
 				}, 2000);
+			});
+
+			// Help Modal functionality
+			const helpBtn = document.getElementById('help-btn');
+			const helpModal = document.getElementById('help-modal');
+			const closeHelpModalBtn = document.getElementById('close-help-modal');
+
+			helpBtn.addEventListener('click', () => {
+				helpModal.showModal();
+			});
+
+			closeHelpModalBtn.addEventListener('click', () => {
+				helpModal.close();
+			});
+
+			helpModal.addEventListener('click', (e) => {
+				if (e.target === helpModal) {
+					helpModal.close();
+				}
 			});
 		</script>
 	</body>
