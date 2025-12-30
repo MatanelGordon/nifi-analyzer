@@ -102,14 +102,17 @@ app.post('/analyze', async (req, res) => {
 		}, events);
 		await new Promise(resolve => setTimeout(resolve, 5000)); // Simulate async work
 
-		setTimeout(() => {
-			fsp.unlink(filePath)
-				.catch(err => {
+		setTimeout(async () => {
+			try {
+				await fsp.access(filePath);
+				await fsp.unlink(filePath);
+				console.log(`File ${filePath} deleted successfully`);
+			} catch (err) {
+				// Only log if it's not a "file doesn't exist" error
+				if (err && typeof err === 'object' && 'code' in err && err.code !== 'ENOENT') {
 					console.error('Error deleting file:', err);
-				})
-				.then(() =>
-					console.log(`File ${filePath} deleted successfully`)
-				);
+				}
+			}
 		}, 600000); // Delete after 10 minute
 
 		res.json({

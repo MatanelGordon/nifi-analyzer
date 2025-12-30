@@ -124,6 +124,8 @@ async function analyzeProcessGroups(
 export async function run(_config: Partial<Config> = {}, events?: Events): Promise<void> {
 	console.log('🚀 NiFi Processor Analyzer Starting...\n');
 
+	let database: ProcessorDatabase | null = null;
+
 	try {
 		const config = await getConfig(_config);
 
@@ -135,7 +137,7 @@ export async function run(_config: Partial<Config> = {}, events?: Events): Promi
 		});
 
 		// Create database
-		const database = new ProcessorDatabase(config.dbPath, config);
+		database = new ProcessorDatabase(config.dbPath, config);
 
 		// Determine which process group to analyze
 		let processGroupId = config.pgId;
@@ -176,6 +178,11 @@ export async function run(_config: Partial<Config> = {}, events?: Events): Promi
 		const err = error instanceof Error ? error : new Error(String(error));
 		events?.onFail?.(err);
 		console.error('❌ Fatal error:', error);
+
+		// Ensure database is closed even on fatal error
+		if (database) {
+			await database.close();
+		}
 
 		if (!_config.noExit) {
 			process.exit(1);
