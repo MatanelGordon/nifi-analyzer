@@ -508,49 +508,50 @@ export class ProcessorDatabase {
 			) VALUES (?, ?, ?)	
 		`);
 
-		for (const event of provenanceEvents) {
-			insertToEvents.run(
-				+event.id,
-				event.eventTime ? new Date(event.eventTime).getTime() : null,
-				event.eventDuration ?? null,
-				event.lineageDuration ?? null,
-				event.eventType ?? null,
-				event.flowFileUuid ?? null,
-				event.fileSizeBytes ?? null,
-				event.groupId ?? null,
-				event.componentId ?? null,
-				event.contentEqual !== undefined
-					? event.contentEqual
-						? 1
-						: 0
-					: null,
-				event.clusterNodeId ?? null
-			);
-		}
+		db.transaction(() => {
+			for (const event of provenanceEvents) {
+				const eventId = +event.id;
+				
+				insertToEvents.run(
+					eventId,
+					event.eventTime ? new Date(event.eventTime).getTime() : null,
+					event.eventDuration ?? null,
+					event.lineageDuration ?? null,
+					event.eventType ?? null,
+					event.flowFileUuid ?? null,
+					event.fileSizeBytes ?? null,
+					event.groupId ?? null,
+					event.componentId ?? null,
+					event.contentEqual !== undefined
+						? event.contentEqual
+							? 1
+							: 0
+						: null,
+					event.clusterNodeId ?? null
+				);
 
-		for (const { attributes, id, flowFileUuid } of provenanceEvents) {
-			if (!attributes) continue;
+				// Insert attributes for this event immediately
+				if (event.attributes) {
+					for (const attr of event.attributes) {
+						insertToAttributes.run(eventId, event.flowFileUuid, attr.name, attr.value);
+					}
+				}
 
-			for (const attr of attributes) {
-				insertToAttributes.run(id, flowFileUuid, attr.name, attr.value);
+				// Insert child relationships
+				if (event.childUuids) {
+					for (const childId of event.childUuids) {
+						insertToRelationship.run(eventId, event.flowFileUuid, childId);
+					}
+				}
+
+				// Insert parent relationships
+				if (event.parentUuids) {
+					for (const parentId of event.parentUuids) {
+						insertToRelationship.run(eventId, parentId, event.flowFileUuid);
+					}
+				}
 			}
-		}
-
-		for (const { childUuids, id, flowFileUuid } of provenanceEvents) {
-			if (!childUuids) continue;
-
-			for (const childId of childUuids) {
-				insertToRelationship.run(id, flowFileUuid, childId);
-			}
-		}
-
-		for (const { parentUuids, id, flowFileUuid } of provenanceEvents) {
-			if (!parentUuids) continue;
-
-			for (const parentId of parentUuids) {
-				insertToRelationship.run(id, parentId, flowFileUuid);
-			}
-		}
+		})();
 	}
 
 	public async getProcessorCount(): Promise<number> {

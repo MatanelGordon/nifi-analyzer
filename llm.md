@@ -1,16 +1,19 @@
 # Apache NiFi Database Schema Documentation
 
-This document describes the database schema for analyzing Apache NiFi processors, connections, and their properties. Apache NiFi is a dataflow system that enables data routing, transformation, and system mediation logic.
+This document describes the SQLITE database schemas for analyzing Apache NiFi processors, connections, and their properties. Apache NiFi is a dataflow system that enables data routing, transformation, and system mediation logic.
 
 ## Core NiFi Concepts
 
 ### Processors
+
 A processor is the fundamental building block in NiFi that is responsible for:
+
 - Creating, sending, receiving, transforming, routing, splitting, merging, and processing FlowFiles
 - Each processor is designed to perform a specific task
 - Examples: GetFile, PutFile, ConvertRecord, ExecuteSQL, InvokeHTTP
 
 #### Advanced Processor Configuration
+
 - Run Duration: The amount of time a processor will run for each scheduled execution
   - Longer durations can increase throughput but may impact latency
   - Short durations provide better responsiveness but have more scheduling overhead
@@ -25,13 +28,16 @@ A processor is the fundamental building block in NiFi that is responsible for:
   - Different from penalty duration which applies to individual FlowFiles
 
 ### Connections
+
 A connection represents a link between components (usually processors) in the flow:
+
 - Acts as a queue for FlowFiles waiting to be processed
 - Enables back pressure to prevent overwhelming downstream processors
 - Can be configured for load balancing in a cluster
 - Maintains order of FlowFiles unless otherwise configured
 
 #### Advanced Connection Configuration
+
 - Back Pressure:
   - Object Count Threshold: Maximum number of FlowFiles in the queue
   - Object Size Threshold: Maximum total size of FlowFiles in the queue
@@ -44,7 +50,9 @@ A connection represents a link between components (usually processors) in the fl
   - Helps prevent stale data from being processed
 
 ### Process Groups
+
 A Process Group is a container for organizing and managing dataflows:
+
 - Groups related processors and connections into logical units
 - Enables hierarchical dataflow management
 - Can have input and output ports for communication with other process groups
@@ -54,6 +62,7 @@ A Process Group is a container for organizing and managing dataflows:
 ## Tables Overview
 
 ### processors_info
+
 Stores the main information about NiFi processors. Each processor represents a data processing unit in the NiFi flow.
 
 | Column | Type | Description |
@@ -68,8 +77,8 @@ Stores the main information about NiFi processors. Each processor represents a d
 | execution | VARCHAR NOT NULL | Execution mode (RUNNING, STOPPED, etc.) |
 | comments | VARCHAR | Optional user comments about the processor |
 
-
 ### processors_properties
+
 Stores the configuration properties of each processor. Each processor can have multiple properties.
 
 | Column | Type | Description |
@@ -80,6 +89,7 @@ Stores the configuration properties of each processor. Each processor can have m
 | value | VARCHAR | Value of the property |
 
 ### nodes_info
+
 Stores information about NiFi nodes in a cluster setup.
 
 | Column | Type | Description |
@@ -89,6 +99,7 @@ Stores information about NiFi nodes in a cluster setup.
 | api_port | INTEGER NOT NULL | Port number for the node's API |
 
 ### processors_status_history
+
 Records historical performance metrics for processors across nodes.
 
 | Column | Type | Description |
@@ -111,6 +122,7 @@ Records historical performance metrics for processors across nodes.
 | input_count | INTEGER NOT NULL | Count of input flowfiles |
 
 ### connections_targets
+
 Stores information about connection endpoints (sources and destinations).
 
 | Column | Type | Description |
@@ -120,6 +132,7 @@ Stores information about connection endpoints (sources and destinations).
 | type | VARCHAR NOT NULL | Type of the endpoint (PROCESSOR, FUNNEL, etc.) |
 
 ### connections_info
+
 Stores information about connections between processors and other components.
 
 | Column | Type | Description |
@@ -138,6 +151,7 @@ Stores information about connections between processors and other components.
 | flow_file_expiration | VARCHAR | Duration after which flowfiles expire |
 
 ### provenance_events
+
 Stores provenance event records that track the lifecycle and transformations of FlowFiles through the NiFi dataflow. Each row represents a single event that occurred to a FlowFile, such as creation, modification, routing, or deletion.
 
 | Column | Type | Description |
@@ -155,6 +169,7 @@ Stores provenance event records that track the lifecycle and transformations of 
 | node_id | VARCHAR | Node ID where the event occurred in a cluster setup |
 
 ### provenance_events_attributes
+
 Stores FlowFile attributes associated with each provenance event. This table provides metadata and context about the FlowFile at the time of the event, including custom attributes set by processors.
 
 | Column | Type | Description |
@@ -166,6 +181,7 @@ Stores FlowFile attributes associated with each provenance event. This table pro
 | PRIMARY KEY | (event_id, name, flowfile_uuid) | Composite primary key |
 
 ### provenance_events_flowfile_relationships
+
 Stores parent-child relationships between FlowFiles that result from splitting, merging, or other operations that create or modify FlowFile lineage. This table tracks how FlowFiles are related to each other through processing events.
 
 | Column | Type | Description |
@@ -204,6 +220,7 @@ When analyzing NiFi flow performance, consider these key points:
     - Good candidates for increasing concurrent tasks to improve throughput.
     - Shows the maximum observed task duration per processor.
     - Example prompt:
+
 ```sql
 SELECT MAX(psh.task_millis) / 1000 AS duration, psh.processor_id AS processor_id, pi.name AS name, pi.type AS type
 FROM processors_status_history psh
@@ -218,6 +235,7 @@ ORDER BY MAX(psh.task_millis) DESC;
     - High average lineage duration suggests a bottleneck in processing throughput.
     - Consider increasing concurrent tasks and run duration for these processors.
     - Example prompt:
+
 ```sql
 SELECT psh.processor_id AS processor_id,
          MAX(psh.average_lineage_duration) as average_lineage,
@@ -234,6 +252,7 @@ ORDER BY average_lineage
     - Processors with high run_duration may increase throughput but also increase latency.
     - Useful for identifying where to tune run duration for better performance.
     - Example prompt:
+
 ```sql
 SELECT * FROM processors_info
 WHERE run_duration >= 1000
@@ -242,7 +261,9 @@ WHERE run_duration >= 1000
 ## Example Queries
 
 ### Get High-Duration Processors
+
 Retrieves processors with run duration > 500ms:
+
 ```sql
 SELECT 
     name,
@@ -255,7 +276,9 @@ ORDER BY run_duration DESC;
 ```
 
 ### Get Load-Balanced Connections
+
 Retrieves all connections that have load balancing enabled:
+
 ```sql
 SELECT 
     c.name AS connection_name,
@@ -270,7 +293,9 @@ WHERE c.is_load_balanced = TRUE;
 ```
 
 ### Get Most Time-Consuming Processor Types
+
 Retrieves processor types ordered by their average task duration and lineage duration:
+
 ```sql
 SELECT 
     p.type AS processor_type,
@@ -281,14 +306,18 @@ JOIN processors_status_history h ON p.id = h.processor_id
 GROUP BY p.type
 ORDER BY avg_task_millis DESC;
 ```
+
 This query:
+
 - Groups processors by their type
 - Calculates average processing time (taskMillis) for each type
 - Calculates average lineage duration (time data spends in the flow) for each type
 - Orders results to show most time-consuming processor types first
 
 ### Find Biggest FlowFiles with Specific Attribute Condition
+
 Retrieves the top 5 largest FlowFiles where the attribute 'a' has a length greater than 4:
+
 ```sql
 SELECT 
     pe.flowfile_uuid,
@@ -303,7 +332,9 @@ WHERE pea.name = 'a'
 ORDER BY pe.flowfile_size_bytes DESC
 LIMIT 5;
 ```
+
 This query:
+
 - Joins provenance_events with provenance_events_attributes tables
 - Filters for events where attribute name is 'a' and value length > 4
 - Orders by FlowFile size in descending order
@@ -406,4 +437,3 @@ Use cases:
 - Analyzing end-to-end performance of a data processing pipeline over time
 - Identifying bottlenecks in a specific flow path at different time periods
 - Building dashboards with historical trends for connected processors
-

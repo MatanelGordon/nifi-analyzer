@@ -5,11 +5,24 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<link rel="icon" href="favicon.ico" type="image/x-icon" />
 		<link rel="stylesheet" href="index.css" />
+		<script src="/socket.io/socket.io.js"></script>
+		<script src="terminal.js" defer></script>
 		<script src="index.js" defer></script>
 		<title>Nifi Analyzer</title>
 	</head>
 	<body>
 		<button class="help-button" id="help-btn" type="button" title="About this project">?</button>
+		<button class="terminal-toggle-button" id="terminal-toggle-btn" type="button" title="Toggle Terminal">></button>
+		
+		<!-- Terminal Display -->
+		<div class="terminal-container" id="terminal-container">
+			<div class="terminal-header">
+				<span class="terminal-title">NiFi Analyzer Terminal</span>
+				<button class="terminal-close" id="terminal-close-btn" type="button">×</button>
+			</div>
+			<pre class="terminal-output" id="terminal-output"></pre>
+		</div>
+		
 		<form class="content-wrapper" id="analyze-form">
 			<h1 class="title">Nifi Analyzer</h1>
 			<div class="field">

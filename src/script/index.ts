@@ -1,7 +1,7 @@
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { Config } from '../config.js';
-import { run } from '../logic.js';
+import { run, Events } from '../logic.js';
 
 /**
  * Parse the auth flag from format username:password into separate username and password
@@ -97,7 +97,14 @@ process.on('SIGTERM', () => {
 async function main() {
   try {
     const config = parseArgs(process.argv);
-    await run(config);
+    
+    const events: Events = {
+      onMessage: (message) => console.log(message.content),
+      onSuccess: () => {},
+      onFail: (error) => console.error('❌ Error:', error)
+    };
+    
+    await run(config, events);
   } catch (error) {
     console.error('❌ Unhandled error:', error);
     process.exit(1);

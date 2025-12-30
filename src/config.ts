@@ -29,20 +29,20 @@ export async function getConfig(conf: Partial<Config> = {}): Promise<Config> {
   console.log('\n');
 
   return {
-		nifiUrl,
+		nifiUrl: removeTrailingSlash(nifiUrl),
 		nifiUsername,
 		nifiPassword,
 		pgId,
 		dbPath,
 		noExit: conf.noExit ?? false,
-    provenance: {
-      enabled: p_enabled,
-      maxResults: p_maxResults
-    }
+		provenance: {
+			enabled: p_enabled,
+			maxResults: p_maxResults,
+		},
   };
+}
 
-
-
-
+function removeTrailingSlash(url: string): string {
+  return url.endsWith('/') ? url.slice(0, -1) : url;
 
 }

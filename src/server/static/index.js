@@ -11,9 +11,27 @@ document
 async function runScript(nifiUrl, username, password, pgId, provenanceLimit) {
     try{
         startButtonLoader();
+        
+        // Clear terminal and show it
+        window.Terminal.clearTerminal();
+        window.Terminal.showTerminal();
+        
+        // Connect to socket and get socket ID
+        const socketId = window.Terminal.connectToSocket();
+        
+        // Wait a bit for socket to connect if it's a new connection
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         const res = await fetch('/analyze', {
 			method: 'POST',
-			body: JSON.stringify({ nifiUrl, username, password, pgId, provenanceLimit }),
+			body: JSON.stringify({ 
+				nifiUrl, 
+				username, 
+				password, 
+				pgId, 
+				provenanceLimit,
+				socketId: window.Terminal.getSocketId() 
+			}),
 			headers: { 'Content-Type': 'application/json' },
 		});
         const json = await res.json();
