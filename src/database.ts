@@ -23,6 +23,9 @@ export class ProcessorDatabase {
 			}
 
 			this.db = new Database(this.dbPath);
+			
+			// Enable foreign key constraints
+			this.db.pragma('foreign_keys = ON');
 
 			// Initialize the table
 			const processorsInfoTable = `
@@ -45,7 +48,7 @@ export class ProcessorDatabase {
     		processor_id VARCHAR NOT NULL,
     		name VARCHAR NOT NULL,
 			value VARCHAR,
-    		FOREIGN KEY (processor_id) REFERENCES processors_info(id)
+    		FOREIGN KEY (processor_id) REFERENCES processors_info(id) ON DELETE CASCADE
 		)`;
 
 			const nifiNodesTable = `
@@ -75,8 +78,8 @@ export class ProcessorDatabase {
             input_bytes INTEGER NOT NULL DEFAULT 0,
             task_millis INTEGER NOT NULL DEFAULT 0,
             input_count INTEGER NOT NULL DEFAULT 0,
-            FOREIGN KEY (processor_id) REFERENCES processors_info(id),
-            FOREIGN KEY (node_id) REFERENCES nodes_info(id)
+            FOREIGN KEY (processor_id) REFERENCES processors_info(id) ON DELETE CASCADE,
+            FOREIGN KEY (node_id) REFERENCES nodes_info(id) ON DELETE CASCADE
         )
       `;
 
@@ -165,7 +168,8 @@ export class ProcessorDatabase {
 				processor_id VARCHAR,
 				content_equal INTEGER,
 				node_id VARCHAR,
-				FOREIGN KEY (processor_id) REFERENCES processors_info(id)
+				FOREIGN KEY (processor_id) REFERENCES processors_info(id) ON DELETE SET NULL,
+				FOREIGN KEY (node_id) REFERENCES nodes_info(id) ON DELETE SET NULL
 			)
 		`;
 
@@ -176,7 +180,7 @@ export class ProcessorDatabase {
 				name VARCHAR NOT NULL,
 				value VARCHAR NOT NULL,
 				PRIMARY KEY (event_id, name, flowfile_uuid),
-				FOREIGN KEY (event_id) REFERENCES provenance_events(id)
+				FOREIGN KEY (event_id) REFERENCES provenance_events(id) ON DELETE CASCADE
 			)
 		`;
 
@@ -186,7 +190,7 @@ export class ProcessorDatabase {
 				parent_flowfile_uuid VARCHAR NOT NULL,
 				child_flowfile_uuid VARCHAR NOT NULL,
 				PRIMARY KEY (event_id, parent_flowfile_uuid, child_flowfile_uuid),
-				FOREIGN KEY (event_id) REFERENCES provenance_events(id)
+				FOREIGN KEY (event_id) REFERENCES provenance_events(id) ON DELETE CASCADE
 			)
 		`;
 

@@ -100,8 +100,8 @@ app.post('/analyze', async (req, res) => {
 				maxResults: provenanceLimit || 100000,
 			},
 		}, events);
-		await new Promise(resolve => setTimeout(resolve, 5000)); // Simulate async work
 
+		// Schedule file deletion after 10 minutes
 		setTimeout(async () => {
 			try {
 				await fsp.access(filePath);
@@ -113,7 +113,7 @@ app.post('/analyze', async (req, res) => {
 					console.error('Error deleting file:', err);
 				}
 			}
-		}, 600000); // Delete after 10 minute
+		}, 600000);
 
 		res.json({
 			path: filePath,

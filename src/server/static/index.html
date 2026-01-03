@@ -11,19 +11,56 @@
 		<title>Nifi Analyzer</title>
 	</head>
 	<body>
-		<button class="help-button" id="help-btn" type="button" title="About this project">?</button>
-		<button class="terminal-toggle-button" id="terminal-toggle-btn" type="button" title="Toggle Terminal">></button>
-		<button class="llm-button" id="setup-llm" type="button" title="Set up LLM">LLM</button>
-		
+		<div class="button-container">
+			<button
+				class="help-button"
+				id="help-btn"
+				type="button"
+				title="About this project"
+			>
+				?
+			</button>
+			<button
+				class="llm-button"
+				id="setup-llm"
+				type="button"
+				title="Set up LLM"
+			>
+				LLM
+			</button>
+			<button
+				class="terminal-toggle-button"
+				id="terminal-toggle-btn"
+				type="button"
+				title="Toggle Terminal"
+			>
+				>
+			</button>
+			<a
+				class="db-download-button"
+				href="/SQLiteDatabaseBrowserPortable_3.13.1.paf.exe"
+				download
+				title="Download SQLite Database Browser"
+			>
+				<img src="/database.png" alt="Database" />
+			</a>
+		</div>
+
 		<!-- Terminal Display -->
 		<div class="terminal-container" id="terminal-container">
 			<div class="terminal-header">
 				<span class="terminal-title">NiFi Analyzer Terminal</span>
-				<button class="terminal-close" id="terminal-close-btn" type="button">×</button>
+				<button
+					class="terminal-close"
+					id="terminal-close-btn"
+					type="button"
+				>
+					×
+				</button>
 			</div>
 			<pre class="terminal-output" id="terminal-output"></pre>
 		</div>
-		
+
 		<form class="content-wrapper" id="analyze-form">
 			<h1 class="title">Nifi Analyzer</h1>
 			<div class="field">
@@ -67,7 +104,9 @@
 					name="pgid"
 					autocomplete="off"
 				/>
-				<label class="field__label" for="PGID__input">Process Group ID [default: root]</label>
+				<label class="field__label" for="PGID__input"
+					>Process Group ID [default: root]</label
+				>
 			</div>
 			<div class="field">
 				<input
@@ -79,14 +118,22 @@
 					min="0"
 					autocomplete="off"
 				/>
-				<label class="field__label" for="PROVENANCE__input">Max Processor Provenance Events</label>
+				<label class="field__label" for="PROVENANCE__input"
+					>Max Processor Provenance Events</label
+				>
 				<span class="field__hint">* 0 means no provenance</span>
 			</div>
-            <div class="footer">
-                <button class="nifi-button" id="analyze">Analyze</button>
-				<a class="nifi-button2" id="get-file" download style="display: none;">Get File</a>
-            </div>
-            <p class="output" id="output"></p>
+			<div class="footer">
+				<button class="nifi-button" id="analyze">Analyze</button>
+				<a
+					class="nifi-button2"
+					id="get-file"
+					download
+					style="display: none"
+					>Get File</a
+				>
+			</div>
+			<p class="output" id="output"></p>
 		</form>
 
 		<!-- LLM Setup Modal -->
@@ -97,12 +144,27 @@
 					<button class="close-btn" id="close-modal">&times;</button>
 				</div>
 				<div class="modal-body">
-					<span class="instruction">Copy the following content to your LLM (ChatGPT, Claude, etc.):</span>
+					<span class="instruction"
+						>Copy the following content to your LLM (ChatGPT,
+						Claude, etc.):</span
+					>
 					<div class="content-container">
-						<pre id="llm-content" class="llm-content">Loading...</pre>
+						<pre id="llm-content" class="llm-content">
+Loading...</pre
+						>
 						<div class="button-group">
-							<button class="copy-btn nifi-button" id="select-content">Select All</button>
-							<button class="copy-btn nifi-button" id="copy-content">Copy</button>
+							<button
+								class="copy-btn nifi-button"
+								id="select-content"
+							>
+								Select All
+							</button>
+							<button
+								class="copy-btn nifi-button"
+								id="copy-content"
+							>
+								Copy
+							</button>
 						</div>
 					</div>
 				</div>
@@ -114,50 +176,112 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h2>About NiFi Analyzer</h2>
-					<button class="close-btn" id="close-help-modal">&times;</button>
+					<button class="close-btn" id="close-help-modal">
+						&times;
+					</button>
 				</div>
 				<div class="modal-body">
 					<div class="help-content">
 						<h3>What is NiFi Analyzer?</h3>
 						<p>Tired of not understanding why your NiFi sucks?</p>
-						<p>NiFi Analyzer is a TypeScript application that extracts processor information and performance metrics from Apache NiFi process groups and stores them in a SQLite database for comprehensive analysis.</p>
-						
+						<p>
+							NiFi Analyzer is a TypeScript application that
+							extracts processor information and performance
+							metrics from Apache NiFi process groups and stores
+							them in a SQLite database for comprehensive
+							analysis.
+						</p>
+
 						<h3>Key Features:</h3>
 						<ul>
-							<li>🔍 Recursively extracts processor information from all nested process groups</li>
-							<li>📊 Comprehensive performance metrics collection and analysis</li>
-							<li>💾 Stores data in SQLite database with structured schema</li>
-							<li>🤖 LLM compatible - use AI to help create SQL queries for analysis</li>
+							<li>
+								🔍 Recursively extracts processor information
+								from all nested process groups
+							</li>
+							<li>
+								📊 Comprehensive performance metrics collection
+								and analysis
+							</li>
+							<li>
+								💾 Stores data in SQLite database with
+								structured schema
+							</li>
+							<li>
+								🤖 LLM compatible - use AI to help create SQL
+								queries for analysis
+							</li>
 						</ul>
 
 						<h3>How to use:</h3>
 						<ol>
-							<li>Enter your NiFi instance URL and credentials</li>
-							<li>Optionally specify a Process Group ID (leave empty for root)</li>
-							<li>Set Max Processor Provenance Events (0 to disable, default 100,000)</li>
+							<li>
+								Enter your NiFi instance URL and credentials
+							</li>
+							<li>
+								Optionally specify a Process Group ID (leave
+								empty for root)
+							</li>
+							<li>
+								Set Max Processor Provenance Events (0 to
+								disable, default 100,000)
+							</li>
 							<li>Click "Analyze" to extract all data</li>
 							<li>Download the generated SQLite database file</li>
-							<li>Use the LLM button to get schema documentation for AI-assisted queries</li>
+							<li>
+								Use the LLM button to get schema documentation
+								for AI-assisted queries
+							</li>
 						</ol>
 
 						<h3>What data is collected:</h3>
 						<ul>
-							<li><strong>Processors:</strong> Configuration, properties, and status history</li>
-							<li><strong>Connections:</strong> Relationships between processors and endpoints</li>
-							<li><strong>Provenance Events:</strong> FlowFile lifecycle events and attributes</li>
-							<li><strong>Performance Metrics:</strong> Historical performance data for analysis</li>
-							<li><strong>System Info:</strong> NiFi cluster node information</li>
+							<li>
+								<strong>Processors:</strong> Configuration,
+								properties, and status history
+							</li>
+							<li>
+								<strong>Connections:</strong> Relationships
+								between processors and endpoints
+							</li>
+							<li>
+								<strong>Provenance Events:</strong> FlowFile
+								lifecycle events and attributes
+							</li>
+							<li>
+								<strong>Performance Metrics:</strong> Historical
+								performance data for analysis
+							</li>
+							<li>
+								<strong>System Info:</strong> NiFi cluster node
+								information
+							</li>
 						</ul>
 
 						<h3>What can you do with it?</h3>
 						<ul>
-							<li>🔍 Detect bottlenecks by querying performance data</li>
-							<li>📊 Create custom visualizations using DataGrip, Apache Superset, or your own UI</li>
-							<li>🧠 Use LLMs to help analyze your data with natural language queries</li>
-							<li>📈 Track trends and identify optimization opportunities</li>
+							<li>
+								🔍 Detect bottlenecks by querying performance
+								data
+							</li>
+							<li>
+								📊 Create custom visualizations using DataGrip,
+								Apache Superset, or your own UI
+							</li>
+							<li>
+								🧠 Use LLMs to help analyze your data with
+								natural language queries
+							</li>
+							<li>
+								📈 Track trends and identify optimization
+								opportunities
+							</li>
 						</ul>
 
-						<p><strong>Note:</strong> All analysis is performed server-side. Your database file is automatically deleted after 10 minutes for security.</p>
+						<p>
+							<strong>Note:</strong> All analysis is performed
+							server-side. Your database file is automatically
+							deleted after 10 minutes for security.
+						</p>
 					</div>
 				</div>
 			</div>
@@ -181,14 +305,16 @@
 						if (content.trim()) {
 							llmContentPre.textContent = content;
 						} else {
-							llmContentPre.textContent = 'LLM content is empty. Please check if llm.md exists.';
+							llmContentPre.textContent =
+								'LLM content is empty. Please check if llm.md exists.';
 						}
 					} else {
 						llmContentPre.textContent = `Error loading LLM content. Status: ${response.status}. Please try again.`;
 					}
 				} catch (error) {
 					console.error('Error loading LLM content:', error);
-					llmContentPre.textContent = 'Error loading LLM content: ' + error.message;
+					llmContentPre.textContent =
+						'Error loading LLM content: ' + error.message;
 				}
 			}
 
@@ -204,14 +330,14 @@
 			});
 
 			// Close modal when clicking outside
-			llmModal.addEventListener('click', (e) => {
+			llmModal.addEventListener('click', e => {
 				if (e.target === llmModal) {
 					llmModal.close();
 				}
 			});
 
 			// Close modal with Escape key
-			document.addEventListener('keydown', (e) => {
+			document.addEventListener('keydown', e => {
 				if (e.key === 'Escape' && llmModal.open) {
 					llmModal.close();
 				}
@@ -220,24 +346,26 @@
 			// Copy content to clipboard
 			copyContentBtn.addEventListener('click', async () => {
 				let success = false;
-				
+
 				// Try modern Clipboard API first (requires HTTPS or localhost)
 				if (navigator.clipboard && window.isSecureContext) {
 					try {
-						await navigator.clipboard.writeText(llmContentPre.textContent);
+						await navigator.clipboard.writeText(
+							llmContentPre.textContent
+						);
 						success = true;
 					} catch (error) {
 						console.warn('Clipboard API failed:', error);
 					}
 				}
-				
+
 				// Fallback for HTTP or older browsers
 				if (!success) {
 					try {
 						// Create a temporary textarea
 						const textArea = document.createElement('textarea');
 						textArea.value = llmContentPre.textContent;
-						
+
 						// Style to be invisible but still interactable
 						textArea.style.top = '0';
 						textArea.style.left = '0';
@@ -249,11 +377,11 @@
 						textArea.style.outline = 'none';
 						textArea.style.boxShadow = 'none';
 						textArea.style.background = 'transparent';
-						
+
 						document.body.appendChild(textArea);
 						textArea.focus();
 						textArea.select();
-						
+
 						// Try to copy
 						try {
 							success = document.execCommand('copy');
@@ -261,13 +389,13 @@
 						} catch (err) {
 							console.error('execCommand error:', err);
 						}
-						
+
 						document.body.removeChild(textArea);
 					} catch (fallbackError) {
 						console.error('Fallback copy failed:', fallbackError);
 					}
 				}
-				
+
 				// Update button text
 				if (success) {
 					copyContentBtn.textContent = 'Copied!';
@@ -281,7 +409,7 @@
 					selection.removeAllRanges();
 					selection.addRange(range);
 				}
-				
+
 				setTimeout(() => {
 					copyContentBtn.textContent = 'Copy';
 				}, 3000);
@@ -304,7 +432,8 @@
 			// Help Modal functionality
 			const helpBtn = document.getElementById('help-btn');
 			const helpModal = document.getElementById('help-modal');
-			const closeHelpModalBtn = document.getElementById('close-help-modal');
+			const closeHelpModalBtn =
+				document.getElementById('close-help-modal');
 
 			helpBtn.addEventListener('click', () => {
 				helpModal.showModal();
@@ -314,7 +443,7 @@
 				helpModal.close();
 			});
 
-			helpModal.addEventListener('click', (e) => {
+			helpModal.addEventListener('click', e => {
 				if (e.target === helpModal) {
 					helpModal.close();
 				}
@@ -322,3 +451,4 @@
 		</script>
 	</body>
 </html>
+

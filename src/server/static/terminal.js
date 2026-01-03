@@ -30,6 +30,29 @@ function initTerminalUI() {
 }
 
 /**
+ * Create a log entry span element with appropriate styling
+ * @param {string} message - Message to display
+ * @param {string} type - Message type (info, success, error)
+ * @returns {HTMLSpanElement} Styled span element
+ */
+function createLogEntry(message, type = 'info') {
+	const timestamp = new Date().toLocaleTimeString();
+	const prefix = type === 'error' ? '[ERROR]' : type === 'success' ? '[SUCCESS]' : '[INFO]';
+	const line = `[${timestamp}] ${prefix} ${message}`;
+	
+	const lineElement = document.createElement('span');
+	lineElement.textContent = line + '\n';
+	
+	if (type === 'error') {
+		lineElement.classList.add('error');
+	} else if (type === 'success') {
+		lineElement.classList.add('success');
+	}
+	
+	return lineElement;
+}
+
+/**
  * Append a message to the terminal
  * @param {string} message - Message to display
  * @param {string} type - Message type (info, success, error)
@@ -37,11 +60,8 @@ function initTerminalUI() {
 function appendToTerminal(message, type = 'info') {
 	if (!terminalOutput) return;
 	
-	const timestamp = new Date().toLocaleTimeString();
-	const prefix = type === 'error' ? '[ERROR]' : type === 'success' ? '[SUCCESS]' : '[INFO]';
-	const line = `[${timestamp}] ${prefix} ${message}\n`;
-	
-	terminalOutput.textContent += line;
+	const lineElement = createLogEntry(message, type);
+	terminalOutput.appendChild(lineElement);
 	
 	// Auto-scroll to bottom
 	terminalOutput.scrollTop = terminalOutput.scrollHeight;

@@ -34,7 +34,13 @@ async function runScript(nifiUrl, username, password, pgId, provenanceLimit) {
 			}),
 			headers: { 'Content-Type': 'application/json' },
 		});
+        
         const json = await res.json();
+        
+        if (!res.ok) {
+            throw new Error(json.message || json.error || 'Analysis failed');
+        }
+        
         outputSuccess("Script executed successfully.");
         setGetFileButtonVisible(json.path);
     }

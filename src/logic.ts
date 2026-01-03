@@ -58,6 +58,13 @@ async function analyzeProcessGroups(
 		totalProcessors += processors.length;
 		events.onMessage?.({ content: `✅ Processed ${processors.length} processors from ${processGroup.component.name}` });
 
+		// Insert connections early to ensure targets are available
+		const connections = await listConnectionsForGroup(
+			client,
+			processGroup.component.id
+		);
+		database.insertConnectionInfo(connections);
+
 		for (const processor of processors) {
 			const statusHistory = await getStatusHistory(
 				client,
@@ -83,13 +90,6 @@ async function analyzeProcessGroups(
 					statusHistory.nodeSnapshots.length
 				} metrics for processor: ${processor.name}` });
 		}
-
-		const connections = await listConnectionsForGroup(
-			client,
-			processGroup.component.id
-		);
-
-		database.insertConnectionInfo(connections);
 	}
 
 	events.onMessage?.({ content: `\n🎉 Analysis completed!` });
@@ -174,6 +174,7 @@ export async function run(_config: Partial<Config> = {}, events?: Events): Promi
 		console.log(
 			'🔍 You can now query the database or use any SQLite client to analyze the data.'
 		);
+		events?.onSuccess?.();
 	} catch (error) {
 		const err = error instanceof Error ? error : new Error(String(error));
 		events?.onFail?.(err);
@@ -187,6 +188,9 @@ export async function run(_config: Partial<Config> = {}, events?: Events): Promi
 		if (!_config.noExit) {
 			process.exit(1);
 		}
+		
+		// Re-throw error for server mode
+		throw err;
 	}
 }
 
