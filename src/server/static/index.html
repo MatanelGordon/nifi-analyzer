@@ -13,6 +13,7 @@
 	<body>
 		<button class="help-button" id="help-btn" type="button" title="About this project">?</button>
 		<button class="terminal-toggle-button" id="terminal-toggle-btn" type="button" title="Toggle Terminal">></button>
+		<button class="llm-button" id="setup-llm" type="button" title="Set up LLM">LLM</button>
 		
 		<!-- Terminal Display -->
 		<div class="terminal-container" id="terminal-container">
@@ -83,7 +84,6 @@
 			</div>
             <div class="footer">
                 <button class="nifi-button" id="analyze">Analyze</button>
-                <button class="nifi-button2" id="setup-llm" type="button">Set up LLM</button>
 				<a class="nifi-button2" id="get-file" download style="display: none;">Get File</a>
             </div>
             <p class="output" id="output"></p>
@@ -119,25 +119,45 @@
 				<div class="modal-body">
 					<div class="help-content">
 						<h3>What is NiFi Analyzer?</h3>
-						<p>NiFi Analyzer is a tool that extracts and analyzes data from Apache NiFi instances, storing it in a SQLite database for easy querying and analysis.</p>
+						<p>Tired of not understanding why your NiFi sucks?</p>
+						<p>NiFi Analyzer is a TypeScript application that extracts processor information and performance metrics from Apache NiFi process groups and stores them in a SQLite database for comprehensive analysis.</p>
 						
-						<h3>How it works:</h3>
+						<h3>Key Features:</h3>
+						<ul>
+							<li>🔍 Recursively extracts processor information from all nested process groups</li>
+							<li>📊 Comprehensive performance metrics collection and analysis</li>
+							<li>💾 Stores data in SQLite database with structured schema</li>
+							<li>🤖 LLM compatible - use AI to help create SQL queries for analysis</li>
+						</ul>
+
+						<h3>How to use:</h3>
 						<ol>
 							<li>Enter your NiFi instance URL and credentials</li>
-							<li>Click "Analyze" to extract processor information, connections, and performance metrics</li>
+							<li>Optionally specify a Process Group ID (leave empty for root)</li>
+							<li>Set Max Processor Provenance Events (0 to disable, default 100,000)</li>
+							<li>Click "Analyze" to extract all data</li>
 							<li>Download the generated SQLite database file</li>
-							<li>Use the "Set up LLM" button to get schema documentation for AI-assisted queries</li>
+							<li>Use the LLM button to get schema documentation for AI-assisted queries</li>
 						</ol>
 
 						<h3>What data is collected:</h3>
 						<ul>
-							<li>Processor configurations and properties</li>
-							<li>Connection information and relationships</li>
-							<li>Performance metrics and status history</li>
-							<li>Provenance events (optional)</li>
+							<li><strong>Processors:</strong> Configuration, properties, and status history</li>
+							<li><strong>Connections:</strong> Relationships between processors and endpoints</li>
+							<li><strong>Provenance Events:</strong> FlowFile lifecycle events and attributes</li>
+							<li><strong>Performance Metrics:</strong> Historical performance data for analysis</li>
+							<li><strong>System Info:</strong> NiFi cluster node information</li>
 						</ul>
 
-						<p><strong>Note:</strong> All analysis is performed server-side. Your database file is automatically deleted after 10 minutes.</p>
+						<h3>What can you do with it?</h3>
+						<ul>
+							<li>🔍 Detect bottlenecks by querying performance data</li>
+							<li>📊 Create custom visualizations using DataGrip, Apache Superset, or your own UI</li>
+							<li>🧠 Use LLMs to help analyze your data with natural language queries</li>
+							<li>📈 Track trends and identify optimization opportunities</li>
+						</ul>
+
+						<p><strong>Note:</strong> All analysis is performed server-side. Your database file is automatically deleted after 10 minutes for security.</p>
 					</div>
 				</div>
 			</div>

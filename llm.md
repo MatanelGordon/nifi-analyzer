@@ -437,3 +437,226 @@ Use cases:
 - Analyzing end-to-end performance of a data processing pipeline over time
 - Identifying bottlenecks in a specific flow path at different time periods
 - Building dashboards with historical trends for connected processors
+
+### Time Bucketing: Aggregate Processor Metrics by Time Intervals
+
+Groups processor status history data into 10-minute time buckets and calculates the average lineage duration for each bucket. This is useful for analyzing performance trends over time and identifying patterns or anomalies.
+
+```sql
+SELECT 
+    psh.processor_id,
+    pi.name AS processor_name,
+    pi.type AS processor_type,
+    -- Create 10-minute time buckets using strftime
+    strftime('%Y-%m-%d %H:', datetime(psh.timestamp / 1000, 'unixepoch')) || 
+    printf('%02d', (CAST(strftime('%M', datetime(psh.timestamp / 1000, 'unixepoch')) AS INTEGER) / 10) * 10) AS time_bucket,
+    AVG(psh.average_lineage_duration) AS avg_lineage_duration,
+    COUNT(*) AS data_points_in_bucket,
+    MIN(psh.average_lineage_duration) AS min_lineage_duration,
+    MAX(psh.average_lineage_duration) AS max_lineage_duration
+FROM processors_status_history psh
+JOIN processors_info pi ON psh.processor_id = pi.id
+WHERE psh.average_lineage_duration > 0
+    AND psh.node_id = 'TOTAL'  -- Use aggregated metrics across all nodes
+GROUP BY psh.processor_id, time_bucket
+ORDER BY psh.processor_id, time_bucket;
+```
+
+This query:
+
+- Converts Unix timestamp (milliseconds) to datetime format
+- Groups data into 10-minute intervals (00, 10, 20, 30, 40, 50 minutes)
+- Calculates average lineage duration for each processor within each time bucket
+- Includes additional statistics (min, max, count) for better analysis
+- Filters for aggregated metrics using `node_id = 'TOTAL'`
+- Orders results by processor and time for easy time-series visualization
+
+Alternative: Simpler 10-minute bucketing using Unix timestamp arithmetic:
+
+```sql
+SELECT 
+    psh.processor_id,
+    pi.name AS processor_name,
+    -- Simple bucketing: round timestamp down to nearest 10 minutes (600000 milliseconds)
+    (psh.timestamp / 600000) * 600000 AS time_bucket_ms,
+    datetime((psh.timestamp / 600000) * 600000 / 1000, 'unixepoch') AS time_bucket_readable,
+    AVG(psh.average_lineage_duration) AS avg_lineage_duration,
+    COUNT(*) AS data_points
+FROM processors_status_history psh
+JOIN processors_info pi ON psh.processor_id = pi.id
+WHERE psh.average_lineage_duration > 0
+    AND psh.node_id = 'TOTAL'
+GROUP BY psh.processor_id, time_bucket_ms
+ORDER BY psh.processor_id, time_bucket_ms;
+```
+
+Use cases:
+
+- Identifying performance degradation patterns over time
+- Comparing processor performance across different time periods
+- Creating time-series visualizations and dashboards
+- Detecting anomalies by comparing buckets
+- Analyzing the impact of configuration changes or system events
+- Smoothing out noisy data for trend analysis
+
+### Per-Node Analysis: Task Count by Node
+
+Analyzes the number of tasks executed by specific processor types across different nodes in a cluster. This example shows InvokeHTTP processors' task counts per node in the last 5 minutes, useful for identifying load distribution and node-specific performance issues.
+
+```sql
+SELECT 
+    pi.name AS processor_name,
+    pi.type AS processor_type,
+    psh.node_id,
+    ni.address AS node_address,
+    SUM(psh.task_count) AS total_tasks,
+    AVG(psh.task_count) AS avg_tasks_per_sample,
+    MAX(psh.task_count) AS max_tasks_per_sample,
+    COUNT(*) AS sample_count,
+    MIN(datetime(psh.timestamp / 1000, 'unixepoch')) AS first_sample,
+    MAX(datetime(psh.timestamp / 1000, 'unixepoch')) AS last_sample
+FROM processors_status_history psh
+JOIN processors_info pi ON psh.processor_id = pi.id
+LEFT JOIN nodes_info ni ON psh.node_id = ni.id
+WHERE pi.type LIKE '%InvokeHTTP%'
+    AND psh.node_id != 'TOTAL'  -- Exclude aggregated metrics, show per-node only
+    AND psh.timestamp >= (strftime('%s', 'now') - 300) * 1000  -- Last 5 minutes (300 seconds)
+GROUP BY pi.id, psh.node_id
+ORDER BY total_tasks DESC, processor_name, node_id;
+```
+
+This query:
+
+- Filters for InvokeHTTP processors specifically
+- Excludes the 'TOTAL' aggregated metrics to show individual node performance
+- Limits results to the last 5 minutes using Unix timestamp comparison
+- Calculates total, average, and maximum task counts per node
+- Joins with `nodes_info` to show human-readable node addresses
+- Shows the time range of samples included in the aggregation
+- Orders by total tasks to identify the busiest processor/node combinations
+
+Alternative: Compare node performance for a specific processor:
+
+```sql
+SELECT 
+    psh.node_id,
+    ni.address AS node_address,
+    AVG(psh.task_count) AS avg_tasks,
+    AVG(psh.average_task_nanos) / 1000000 AS avg_task_duration_ms,
+    AVG(psh.input_count) AS avg_input,
+    AVG(psh.output_count) AS avg_output,
+    COUNT(*) AS samples
+FROM processors_status_history psh
+LEFT JOIN nodes_info ni ON psh.node_id = ni.id
+WHERE psh.processor_id = 'PROCESSOR_ID_HERE'  -- Replace with specific processor ID
+    AND psh.node_id != 'TOTAL'
+    AND psh.timestamp >= (strftime('%s', 'now') - 300) * 1000
+GROUP BY psh.node_id
+ORDER BY avg_tasks DESC;
+```
+
+Use cases:
+
+- Identifying uneven load distribution across cluster nodes
+- Detecting node-specific performance issues or bottlenecks
+- Monitoring high-traffic processors like InvokeHTTP in real-time
+- Comparing node performance to identify hardware or network issues
+- Validating load balancing configuration effectiveness
+- Troubleshooting cluster-specific problems
+
+### Lineage Duration Gaps: Find Bottlenecks Between Connected Processors
+
+Analyzes the difference in average lineage duration between connected processors to identify where FlowFiles spend the most time waiting or processing. Large gaps indicate potential bottlenecks in the dataflow pipeline.
+
+```sql
+SELECT 
+    ci.name AS connection_name,
+    src.name AS source_processor,
+    dst.name AS destination_processor,
+    src.type AS source_type,
+    dst.type AS destination_type,
+    AVG(src_history.average_lineage_duration) AS source_avg_lineage,
+    AVG(dst_history.average_lineage_duration) AS destination_avg_lineage,
+    AVG(dst_history.average_lineage_duration - src_history.average_lineage_duration) AS avg_lineage_gap,
+    MAX(dst_history.average_lineage_duration - src_history.average_lineage_duration) AS max_lineage_gap,
+    COUNT(*) AS sample_count
+FROM connections_info ci
+JOIN connections_targets src ON ci.source_id = src.id
+JOIN connections_targets dst ON ci.destination_id = dst.id
+JOIN processors_status_history src_history ON src.id = src_history.processor_id
+JOIN processors_status_history dst_history ON dst.id = dst_history.processor_id
+WHERE src.type = 'PROCESSOR'
+    AND dst.type = 'PROCESSOR'
+    AND src_history.node_id = 'TOTAL'
+    AND dst_history.node_id = 'TOTAL'
+    AND src_history.timestamp = dst_history.timestamp  -- Match same time samples
+    AND dst_history.average_lineage_duration > src_history.average_lineage_duration  -- Only positive gaps
+GROUP BY ci.id
+HAVING avg_lineage_gap > 0
+ORDER BY avg_lineage_gap DESC
+LIMIT 20;
+```
+
+This query:
+
+- Joins connections with their source and destination processors
+- Matches status history records from the same timestamp for accurate comparison
+- Calculates the difference in lineage duration between connected processors
+- Filters for positive gaps (where destination has higher lineage than source)
+- Uses aggregated metrics (`node_id = 'TOTAL'`) for overall system view
+- Orders by average gap to identify the worst bottlenecks
+- Includes max gap to see peak performance issues
+
+Alternative: Find gaps with time-based filtering and additional context:
+
+```sql
+SELECT 
+    ci.name AS connection_name,
+    src.name AS source_processor,
+    dst.name AS destination_processor,
+    pi_src.concurrent_tasks AS source_concurrent_tasks,
+    pi_dst.concurrent_tasks AS dest_concurrent_tasks,
+    pi_src.run_duration AS source_run_duration,
+    pi_dst.run_duration AS dest_run_duration,
+    AVG(dst_history.average_lineage_duration - src_history.average_lineage_duration) AS avg_lineage_gap_ms,
+    AVG(dst_history.average_lineage_duration - src_history.average_lineage_duration) / 1000.0 AS avg_lineage_gap_seconds,
+    AVG(dst_history.task_millis) AS dest_avg_task_duration,
+    AVG(dst_history.input_count) AS dest_avg_input_count,
+    ci.back_pressure_object_threshold,
+    ci.is_load_balanced
+FROM connections_info ci
+JOIN connections_targets src ON ci.source_id = src.id
+JOIN connections_targets dst ON ci.destination_id = dst.id
+JOIN processors_info pi_src ON src.id = pi_src.id
+JOIN processors_info pi_dst ON dst.id = pi_dst.id
+JOIN processors_status_history src_history ON src.id = src_history.processor_id
+JOIN processors_status_history dst_history ON dst.id = dst_history.processor_id
+WHERE src.type = 'PROCESSOR'
+    AND dst.type = 'PROCESSOR'
+    AND src_history.node_id = 'TOTAL'
+    AND dst_history.node_id = 'TOTAL'
+    AND src_history.timestamp = dst_history.timestamp
+    AND dst_history.average_lineage_duration > src_history.average_lineage_duration
+    AND src_history.timestamp >= (strftime('%s', 'now') - 3600) * 1000  -- Last hour
+GROUP BY ci.id
+HAVING avg_lineage_gap_ms > 100  -- Only gaps > 100ms
+ORDER BY avg_lineage_gap_ms DESC;
+```
+
+This enhanced query:
+
+- Adds processor configuration details (concurrent tasks, run duration)
+- Includes connection properties (back pressure, load balancing)
+- Shows destination processor's task duration and input count
+- Filters for recent data (last hour)
+- Converts gap to seconds for easier interpretation
+- Only shows significant gaps (> 100ms)
+
+Use cases:
+
+- Identifying the slowest connections in your dataflow
+- Finding processors that can't keep up with upstream throughput
+- Prioritizing which processors need performance tuning (increase concurrent tasks, run duration)
+- Detecting where back pressure might be occurring
+- Analyzing the impact of load balancing on performance
+- Planning capacity improvements by focusing on the biggest gaps
