@@ -5,10 +5,6 @@ export interface Config {
 	pgId: string | null;
 	dbPath: string;
 	noExit: boolean;
-	provenance: {
-		maxResults: number;
-		enabled: boolean;
-	};
 }
 
 export async function getConfig(conf: Partial<Config> = {}): Promise<Config> {
@@ -17,9 +13,6 @@ export async function getConfig(conf: Partial<Config> = {}): Promise<Config> {
   const nifiPassword = conf.nifiPassword ?? process.env.NIFI_PASSWORD ?? '12345678Admin!';
   const pgId = conf.pgId ?? process.env.PG_ID ?? null;
   const dbPath = conf.dbPath ?? process.env.DB_PATH ?? './data/output.db';
-  const p_maxResults =
-		conf.provenance?.maxResults ?? +(process.env['PROVENANCE_MAX_RESULTS'] ?? 50000);
-  const p_enabled = conf.provenance?.enabled ?? (process.env['PROVENANCE_ENABLED']?.toLowerCase() ?? 'true') === 'true'
 
   console.log('📋 Configuration:');
   console.log(`  NiFi URL: ${nifiUrl}`);
@@ -35,10 +28,6 @@ export async function getConfig(conf: Partial<Config> = {}): Promise<Config> {
 		pgId,
 		dbPath,
 		noExit: conf.noExit ?? false,
-		provenance: {
-			enabled: p_enabled,
-			maxResults: p_maxResults,
-		},
   };
 }
 

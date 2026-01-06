@@ -108,21 +108,6 @@
 					>Process Group ID [default: root]</label
 				>
 			</div>
-			<div class="field">
-				<input
-					class="field__input"
-					type="number"
-					id="PROVENANCE__input"
-					name="provenanceLimit"
-					value="100000"
-					min="0"
-					autocomplete="off"
-				/>
-				<label class="field__label" for="PROVENANCE__input"
-					>Max Processor Provenance Events</label
-				>
-				<span class="field__hint">* 0 means no provenance</span>
-			</div>
 			<div class="footer">
 				<button class="nifi-button" id="analyze">Analyze</button>
 				<a
@@ -221,10 +206,6 @@ Loading...</pre
 								Optionally specify a Process Group ID (leave
 								empty for root)
 							</li>
-							<li>
-								Set Max Processor Provenance Events (0 to
-								disable, default 100,000)
-							</li>
 							<li>Click "Analyze" to extract all data</li>
 							<li>Download the generated SQLite database file</li>
 							<li>
@@ -242,10 +223,6 @@ Loading...</pre
 							<li>
 								<strong>Connections:</strong> Relationships
 								between processors and endpoints
-							</li>
-							<li>
-								<strong>Provenance Events:</strong> FlowFile
-								lifecycle events and attributes
 							</li>
 							<li>
 								<strong>Performance Metrics:</strong> Historical

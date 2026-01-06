@@ -7,7 +7,6 @@ import { getProcessorsInGroup } from './get-processors';
 import { getStatusHistory } from './get-status-history';
 import { createNiFiClient, NiFiBaseClient } from './nifi-base';
 import { selectProcessGroup } from './user-prompts';
-import { streamAllProvenanceEventsForProcessor } from './provenance-events';
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
@@ -39,10 +38,6 @@ async function analyzeProcessGroups(
 	for await (const processGroup of processGroups) {
 		events.onMessage?.({ content: `📊 Processing group: ${processGroup.component.name} (${processGroup.component.id})` });
 
-		if(!config.provenance.enabled){
-			events.onMessage?.({ content: '❌ No Provenance' });
-		}
-
 		processedGroups++;
 
 		const processors = await getProcessorsInGroup(
@@ -72,18 +67,6 @@ async function analyzeProcessGroups(
 			);
 
 			database.insertStatusHistory(processor.id, statusHistory);
-
-			if (config.provenance.enabled) {
-				const allProvenance =
-					streamAllProvenanceEventsForProcessor(
-						client,
-						processor.id
-					);
-
-				for await (const provenanceBulk of allProvenance) {
-					database.insertProvenances(provenanceBulk);
-				}
-			}
 
 			events.onMessage?.({ content: `Inserted ${
 					statusHistory.aggregateSnapshots.length +

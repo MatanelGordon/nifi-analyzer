@@ -6,7 +6,6 @@ import { ProcessorInfo } from './get-processors.js';
 import { StatusHistory } from './get-status-history.js';
 import { ConnectionInfo } from './get-connections.js';
 import { Config } from './config.js';
-import { ProvenanceEventDTO } from './provenance-events.js';
 
 export class ProcessorDatabase {
 	private db: Database.Database | null = null;
@@ -141,104 +140,9 @@ export class ProcessorDatabase {
 			console.log('✅ Database table "connections_targets" initialized');
 			this.db.prepare(connectionsInfoTable).run();
 			console.log('✅ Database table "connections_info" initialized');
-
-			this.createProvenanceTable();
 		}
 
 		return this.db;
-	}
-
-	private async createProvenanceTable() {
-		if (!this.config.provenance.enabled) return;
-
-		if (!this.db) {
-			throw new Error('NO this.db is found');
-		}
-
-		const provenanceEventTable = `
-			CREATE TABLE IF NOT EXISTS provenance_events (
-				id INTEGER NOT NULL PRIMARY KEY,
-				event_time INTEGER,
-				event_duration INTEGER,
-				lineage_duration INTEGER,
-				event_type VARCHAR,
-				flowfile_uuid VARCHAR NOT NULL,
-				flowfile_size_bytes INTEGER,
-				pg_id VARCHAR,
-				processor_id VARCHAR,
-				content_equal INTEGER,
-				node_id VARCHAR,
-				FOREIGN KEY (processor_id) REFERENCES processors_info(id) ON DELETE SET NULL,
-				FOREIGN KEY (node_id) REFERENCES nodes_info(id) ON DELETE SET NULL
-			)
-		`;
-
-		const provenanceEventsAttributes = `
-			CREATE TABLE IF NOT EXISTS provenance_events_attributes (
-				event_id INTEGER NOT NULL,
-				flowfile_uuid VARCHAR NOT NULL,
-				name VARCHAR NOT NULL,
-				value VARCHAR NOT NULL,
-				PRIMARY KEY (event_id, name, flowfile_uuid),
-				FOREIGN KEY (event_id) REFERENCES provenance_events(id) ON DELETE CASCADE
-			)
-		`;
-
-		const provenanceEventsFlowfileRelationships = `
-			CREATE TABLE IF NOT EXISTS provenance_events_flowfile_relationships (
-				event_id INTEGER NOT NULL,
-				parent_flowfile_uuid VARCHAR NOT NULL,
-				child_flowfile_uuid VARCHAR NOT NULL,
-				PRIMARY KEY (event_id, parent_flowfile_uuid, child_flowfile_uuid),
-				FOREIGN KEY (event_id) REFERENCES provenance_events(id) ON DELETE CASCADE
-			)
-		`;
-
-		this.db.prepare(provenanceEventTable).run();
-
-		// Create indexes for provenance_events
-		this.db
-			.prepare(
-				'CREATE INDEX IF NOT EXISTS idx_provenance_events_flowfile_uuid ON provenance_events(flowfile_uuid)'
-			)
-			.run();
-		this.db
-			.prepare(
-				'CREATE INDEX IF NOT EXISTS idx_provenance_events_event_time ON provenance_events(event_time)'
-			)
-			.run();
-		this.db
-			.prepare(
-				'CREATE INDEX IF NOT EXISTS idx_provenance_events_event_type ON provenance_events(event_type)'
-			)
-			.run();
-		this.db
-			.prepare(
-				'CREATE INDEX IF NOT EXISTS idx_provenance_events_pg_id ON provenance_events(pg_id)'
-			)
-			.run();
-
-		console.log(
-			'✅ Database table "provenance_events" and indexes initialized'
-		);
-
-		this.db.prepare(provenanceEventsAttributes).run();
-
-		// Create index for attribute name lookups
-		this.db
-			.prepare(
-				'CREATE INDEX IF NOT EXISTS idx_provenance_events_attributes_name ON provenance_events_attributes(name)'
-			)
-			.run();
-
-		console.log(
-			'✅ Database table "provenance_events_attributes" and indexes initialized'
-		);
-
-		this.db.prepare(provenanceEventsFlowfileRelationships).run();
-		console.log(
-			'✅ Database table "provenance_events_flowfile_relationships" initialized'
-		);
 	}
 
 	public async insertProcessorsInfo(
@@ -472,88 +376,6 @@ export class ProcessorDatabase {
 					connection.backPressureDataSizeThreshold || null,
 					connection.flowFileExpiration || null
 				);
-			}
-		})();
-	}
-
-	public insertProvenances(provenanceEvents: ProvenanceEventDTO[]) {
-		const db = this.ensureConnection();
-
-		const insertToEvents = db.prepare(`
-			INSERT OR REPLACE INTO provenance_events (
-				id,
-				event_time,
-				event_duration,
-				lineage_duration,
-				event_type,
-				flowfile_uuid,
-				flowfile_size_bytes,
-				pg_id,
-				processor_id,
-				content_equal,
-				node_id
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		`);
-
-		const insertToAttributes = db.prepare(`
-			INSERT OR REPLACE INTO provenance_events_attributes (
-				event_id,
-				flowfile_uuid,
-				name,
-				value
-			) VALUES (?, ?, ?, ?)
-		`);
-
-		const insertToRelationship = db.prepare(`
-			INSERT OR REPLACE INTO provenance_events_flowfile_relationships (
-				event_id,
-				parent_flowfile_uuid,
-				child_flowfile_uuid
-			) VALUES (?, ?, ?)	
-		`);
-
-		db.transaction(() => {
-			for (const event of provenanceEvents) {
-				const eventId = +event.id;
-				
-				insertToEvents.run(
-					eventId,
-					event.eventTime ? new Date(event.eventTime).getTime() : null,
-					event.eventDuration ?? null,
-					event.lineageDuration ?? null,
-					event.eventType ?? null,
-					event.flowFileUuid ?? null,
-					event.fileSizeBytes ?? null,
-					event.groupId ?? null,
-					event.componentId ?? null,
-					event.contentEqual !== undefined
-						? event.contentEqual
-							? 1
-							: 0
-						: null,
-					event.clusterNodeId ?? null
-				);
-
-				// Insert attributes for this event immediately
-				if (event.attributes) {
-					for (const attr of event.attributes) {
-						insertToAttributes.run(eventId, event.flowFileUuid, attr.name, attr.value);
-					}
-				}
-
-				// Insert child relationships
-				if (event.childUuids) {
-					for (const childId of event.childUuids) {
-						insertToRelationship.run(eventId, event.flowFileUuid, childId);
-					}
-				}
-
-				// Insert parent relationships
-				if (event.parentUuids) {
-					for (const parentId of event.parentUuids) {
-						insertToRelationship.run(eventId, parentId, event.flowFileUuid);
-					}
-				}
 			}
 		})();
 	}

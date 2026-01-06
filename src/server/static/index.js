@@ -8,7 +8,7 @@ document
 	.addEventListener('submit', onSubmitForm);
 
 
-async function runScript(nifiUrl, username, password, pgId, provenanceLimit) {
+async function runScript(nifiUrl, username, password, pgId) {
     try{
         startButtonLoader();
         
@@ -29,7 +29,6 @@ async function runScript(nifiUrl, username, password, pgId, provenanceLimit) {
 				username, 
 				password, 
 				pgId, 
-				provenanceLimit,
 				socketId: window.Terminal.getSocketId() 
 			}),
 			headers: { 'Content-Type': 'application/json' },
@@ -65,13 +64,12 @@ async function onSubmitForm(event) {
     const password = formData.get('password');
     const nifiUrl = formData.get('url');
     let pgid = formData.get('pgid');
-    const provenanceLimit = parseInt(formData.get('provenanceLimit')) || 100000;
 
     if(pgid.trim() === ''){
         pgid = null;
     }
 
-    await runScript(nifiUrl, username, password, pgid, provenanceLimit);
+    await runScript(nifiUrl, username, password, pgid);
 }
 
 function outputError(message){

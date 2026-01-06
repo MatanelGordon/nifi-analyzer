@@ -63,7 +63,7 @@ app.get('/', (req, res) =>
 	res.sendFile(path.resolve('./server/static/index.html'))
 );
 app.post('/analyze', async (req, res) => {
-	const { username, password, nifiUrl, pgId, provenanceLimit, socketId } = req.body;
+	const { username, password, nifiUrl, pgId, socketId } = req.body;
 	const filePath = `data/${uuid()}.db`;
 
 	try {
@@ -95,10 +95,6 @@ app.post('/analyze', async (req, res) => {
 			dbPath: filePath,
 			pgId: pgId || 'root',
 			noExit: true,
-			provenance: {
-				enabled: provenanceLimit > 0,
-				maxResults: provenanceLimit || 100000,
-			},
 		}, events);
 
 		// Schedule file deletion after 10 minutes
